@@ -51,9 +51,26 @@ Every platform has its own app over the same Go core, so any mix of devices work
 
 iPhones do not let apps keep sharing in the background. On an iPhone, open ephdrop to see the list and pull files. Files shared from the phone can be fetched by your other devices while the app is open.
 
+## Download
+
+Get the installer for your computer from the [latest release](https://github.com/ShravanAmudala55/ephdrop/releases/latest):
+
+| Computer | File |
+|----------|------|
+| Mac | `.dmg` |
+| Windows | `.exe` installer |
+| Linux | `.AppImage` or `.deb` |
+
+The apps are not code-signed yet, because signing costs money. Your computer will warn you the first time:
+
+- **Mac:** it says the app is from an "unidentified developer". Right-click the app, choose **Open**, then **Open** again.
+- **Windows:** SmartScreen shows a warning. Click **More info**, then **Run anyway**.
+
+For Android and iPhone, see [Android and iPhone](#android-and-iphone) below.
+
 ## Try it
 
-### Mac, Windows and Linux
+### Build the desktop app yourself
 
 You need [Node.js](https://nodejs.org) and [Go](https://go.dev/dl/).
 

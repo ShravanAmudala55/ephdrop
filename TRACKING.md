@@ -4,7 +4,7 @@ Last updated: 2026-10-05
 
 ## Status
 
-Phase: planning. No code written yet.
+Phase: M1 in progress. Device identity and pinned TLS are done. Next: pairing by QR code.
 
 ## Milestones
 
@@ -16,16 +16,17 @@ Phase: planning. No code written yet.
 - [ ] Decide core language binding approach (gomobile vs native per platform)
 
 ### M1: Go core, two peers on one machine
-- [ ] Go module set up in core/
-- [ ] Device identity (keypair generated on first run)
+- [x] Go module set up in core/
+- [x] Device identity (ed25519 keypair generated on first run, saved with 0600 permissions)
 - [ ] mDNS discovery of peers on the LAN
 - [ ] Pairing by QR code (shared secret, mutual auth)
-- [ ] Encrypted transport (TLS with pinned peer keys)
+- [x] Pinned TLS config: TLS 1.3, both sides present certs, peer key hash checked against paired ids (identity/tls.go)
+- [ ] Encrypted transport server and client built on the pinned TLS config
 - [ ] File list (id, name, size, hash, owner, created, expires)
 - [ ] List gossip between paired peers
 - [ ] Pull a file from a peer by id
 - [ ] Expiry sweeper deletes expired files and entries
-- [ ] Command line tool to drive the core for testing
+- [ ] Command line tool to drive the core for testing (started: `ephdrop id` works, more commands to add)
 - [ ] Tests for pairing, list merge and expiry
 
 ### M2: Windows client
@@ -91,3 +92,4 @@ Phase: planning. No code written yet.
 ## Changelog
 
 - 2026-10-05: Project created. README, tracking and design doc added.
+- 2026-10-05: M1 started. Added core/identity (keypair, device id, key storage, pinned TLS config) with 15 tests, plus `ephdrop id` command.

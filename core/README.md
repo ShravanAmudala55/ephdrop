@@ -10,6 +10,7 @@ Go library shared by all clients: identity, discovery, pairing, file list, trans
 | `pairing` | done | one time invites, paired device list, pairing handshake |
 | `discovery` | logic done, mDNS backend in `discovery/mdns` | announcement format, Finder for visible paired devices, address hints |
 | `shelf` | done | this device's shared files: copy in, hash, list, open, remove, expiry and sweep |
+| `board` | done | the file list a user sees: own files plus other devices' files, reachability, pulling |
 | `transfer` | done | list and pull files between paired devices over pinned TLS, with size and hash checks |
 | `internal/atomicfile` | done | crash safe file writes |
 | `cmd/ephdrop` | in progress | development command line driver |

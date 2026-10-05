@@ -95,22 +95,23 @@ Not covered by the protocol: showing and scanning the QR code. The core produces
 
 ## File list
 
-Every device keeps a list. Each entry:
+Each device keeps its own files in a shelf (`core/shelf`). Each entry:
 
 | Field | Meaning |
 |-------|---------|
 | id | random 128 bit id |
 | name | file name |
 | size | bytes |
-| hash | sha256 of content |
+| sha256 | hash of content, lowercase hex |
 | owner | device id that added the file |
-| created | unix time |
-| expires | unix time |
-| deleted | tombstone flag |
+| created | time the file was added |
+| expires | time the file is deleted |
 
-Lists are merged between peers on connect and when a file is added. Entries are immutable except for the tombstone flag. Merge is a union by id. A tombstone wins over a live entry.
+The list a user sees is built by `core/board`. It combines this device's own files with the lists it fetches from every visible paired device: when a device appears, and again every 30 seconds. Files from a device that has gone out of reach stay listed (until they expire) but are marked as not reachable, and cannot be pulled.
 
-Expiry is absolute time, set when the file is added. Clocks can differ a little between devices, so deletion happens when the local clock passes `expires`. A small grace period is fine.
+Decision: lists are not passed on from one device to another. Every file is offered only by the device that holds it, so a device cannot make up files on behalf of another. The earlier idea of merging lists with deletion markers is dropped. It can come back if peers ever re-serve files they have pulled (see the open question under Transfer).
+
+Expiry is an absolute time set when the file is added. Clocks can differ a little between devices, so each device hides and deletes a file when its own clock passes `expires`.
 
 ## Transfer
 

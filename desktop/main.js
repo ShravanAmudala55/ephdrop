@@ -2,7 +2,7 @@
 // ephdrop desktop shell: starts the Go program (ephdropd), shows its page in a
 // window, lives in the tray, and lets files be dragged out of the window.
 
-const { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain, dialog, shell } = require("electron");
+const { app, BrowserWindow, Tray, Menu, nativeImage, nativeTheme, ipcMain, dialog, shell } = require("electron");
 const { spawn } = require("child_process");
 const fs = require("fs");
 const os = require("os");
@@ -90,11 +90,11 @@ async function daemonFetch(p, opts = {}) {
 
 function createWindow() {
   win = new BrowserWindow({
-    width: 480, height: 720, minWidth: 360, minHeight: 480,
+    width: 980, height: 640, minWidth: 420, minHeight: 480,
     title: "ephdrop",
     icon: path.join(__dirname, "assets", "icon.png"),
     show: false,
-    backgroundColor: "#e9eef1",
+    backgroundColor: nativeTheme.shouldUseDarkColors ? "#0b2a4a" : "#ffffff",
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
       contextIsolation: true,

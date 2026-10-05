@@ -10,6 +10,9 @@ let state = { self: {}, peers: [], items: [], invite: null };
 const saved = new Map();   // file id -> path it was saved to
 const saving = new Set();  // file ids being downloaded
 const drag = new Map();    // file id -> {state: "preparing" | "ready" | "failed", path}
+let filter = "all";        // "all", "local" or a device id
+let selected = null;       // id of the selected file
+let query = "";            // text in the search box
 
 // ------------------------------------------------------------ helpers
 
@@ -59,6 +62,15 @@ function timeLeft(ms) {
   return "Less than a minute left";
 }
 
+function short(ms) {
+  if (ms <= 0) return "Expired";
+  const m = Math.floor(ms / 60000), h = Math.floor(m / 60), d = Math.floor(h / 24);
+  if (d >= 1) return h % 24 ? `${d}d ${h % 24}h` : `${d}d`;
+  if (h >= 1) return h >= 6 || m % 60 === 0 ? `${h}h` : `${h}h ${m % 60}m`;
+  if (m >= 1) return `${m}m`;
+  return "<1m";
+}
+
 function ext(name) {
   const i = name.lastIndexOf(".");
   if (i <= 0 || i === name.length - 1) return "file";
@@ -78,46 +90,102 @@ function el(tag, cls, text) {
 
 // ------------------------------------------------------------ rendering
 
+const SVGNS = "http://www.w3.org/2000/svg";
+
 function render() {
-  $("selfName").textContent = state.self.name || "";
+  if (filter !== "all" && filter !== "local" && !state.peers.some((p) => p.id === filter)) filter = "all";
+  renderNav();
   renderDevices();
   renderFiles();
 }
 
+// Each device keeps its colour for as long as it is paired.
+function peerClass(p) {
+  const i = state.peers.findIndex((x) => x.id === p.id);
+  return "dev-" + (i < 0 ? 0 : i % 5);
+}
+
+function liveItems() {
+  const now = Date.now();
+  return state.items.filter((it) => Date.parse(it.expires) > now);
+}
+
+function navButton(label, cls, count, key) {
+  const li = el("li");
+  const b = el("button", cls);
+  b.type = "button";
+  b.append(el("span", "dot"), el("span", "label", label), el("span", "n", String(count)));
+  if (filter === key) b.setAttribute("aria-current", "true");
+  b.addEventListener("click", () => { filter = key; selected = null; render(); });
+  li.append(b);
+  return li;
+}
+
+function renderNav() {
+  const items = liveItems();
+  const ul = $("nav");
+  ul.replaceChildren();
+  const all = navButton("All files", "", items.length, "all");
+  all.firstChild.firstChild.style.visibility = "hidden";
+  const mine = navButton("This device", "dev-self", items.filter((i) => i.local).length, "local");
+  if (state.self.name) mine.firstChild.title = state.self.name;
+  ul.append(all, mine);
+}
+
 function renderDevices() {
   const ul = $("devices");
+  const items = liveItems();
   ul.replaceChildren();
   for (const p of state.peers) {
     const li = el("li");
-    const b = el("button", "chip " + (p.online ? "online" : "offline"));
+    const b = el("button", `chip ${peerClass(p)} ${p.online ? "online" : "offline"}`);
     b.type = "button";
-    b.append(el("span", "dot"), el("span", "", p.name));
-    b.title = p.online ? `${p.name} is online. Click to remove it.` : `${p.name} is not reachable right now. Click to remove it.`;
-    b.addEventListener("click", () => askRemove(p));
-    li.append(b);
+    b.append(el("span", "dot"), el("span", "label", p.name), el("span", "n", String(items.filter((i) => i.holder === p.id).length)));
+    b.title = p.online ? `${p.name} is online` : `${p.name} is not reachable right now`;
+    if (filter === p.id) b.setAttribute("aria-current", "true");
+    b.addEventListener("click", () => { filter = p.id; selected = null; render(); });
+    const rm = el("button", "rm", "×");
+    rm.type = "button";
+    rm.title = `Remove ${p.name}`;
+    rm.setAttribute("aria-label", `Remove ${p.name}`);
+    rm.addEventListener("click", () => askRemove(p));
+    li.append(b, rm);
     ul.append(li);
   }
   const add = el("li");
-  const ab = el("button", "chip add", "Add device");
+  const ab = el("button", "chip add", "+ Add device");
   ab.type = "button";
   ab.addEventListener("click", openPair);
   add.append(ab);
   ul.append(add);
 }
 
+function visibleItems() {
+  const q = query.trim().toLowerCase();
+  return liveItems().filter((it) => {
+    if (filter === "local" && !it.local) return false;
+    if (filter !== "all" && filter !== "local" && it.holder !== filter) return false;
+    if (q && !(it.name.toLowerCase().includes(q) || String(it.holderName || "").toLowerCase().includes(q))) return false;
+    return true;
+  });
+}
+
 function renderFiles() {
-  const ul = $("files");
+  const body = $("files");
   const empty = $("empty");
   const now = Date.now();
-  const items = state.items.filter((it) => Date.parse(it.expires) > now);
-  ul.replaceChildren();
-  for (const it of items) ul.append(fileRow(it, now));
-  $("hint").hidden = !(shell && items.length);
+  const items = visibleItems();
+  body.replaceChildren();
+  for (const it of items) body.append(fileRow(it, now));
+  $("table").hidden = items.length === 0;
+  if (selected && !items.some((i) => i.id === selected)) selected = null;
 
   empty.replaceChildren();
   empty.hidden = items.length > 0;
   if (items.length === 0) {
-    if (state.peers.length === 0) {
+    if (query.trim()) {
+      empty.append(el("h2", "", "No matches"), el("p", "", "No shared file has that name. Clear the search to see everything."));
+    } else if (state.peers.length === 0) {
       empty.append(el("h2", "", "No devices yet"), el("p", "", "Add your phone or another computer, then drop files here to share them. Files disappear on their own after a day."));
       const b = el("button", "primary", "Add device");
       b.addEventListener("click", openPair);
@@ -126,73 +194,117 @@ function renderFiles() {
       empty.append(el("h2", "", "Nothing shared"), el("p", "", "Drop files anywhere in this window. Your other devices can pick them up until they expire."));
     }
   }
+  renderBar(items);
+}
+
+function ring(frac) {
+  const C = 2 * Math.PI * 10;
+  const svg = document.createElementNS(SVGNS, "svg");
+  svg.setAttribute("viewBox", "0 0 26 26");
+  svg.setAttribute("class", "ring");
+  svg.setAttribute("aria-hidden", "true");
+  const track = document.createElementNS(SVGNS, "circle");
+  const arc = document.createElementNS(SVGNS, "circle");
+  for (const c of [track, arc]) { c.setAttribute("cx", "13"); c.setAttribute("cy", "13"); c.setAttribute("r", "10"); }
+  track.setAttribute("class", "track");
+  arc.setAttribute("class", "arc");
+  arc.setAttribute("stroke-dasharray", `${(C * frac).toFixed(2)} ${C.toFixed(2)}`);
+  arc.setAttribute("transform", "rotate(-90 13 13)");
+  svg.append(track, arc);
+  return svg;
 }
 
 function fileRow(it, now) {
   const total = Math.max(1, Date.parse(it.expires) - Date.parse(it.created));
   const ms = Date.parse(it.expires) - now;
   const frac = Math.min(1, Math.max(0, ms / total));
-  const level = ms < 3600e3 ? "low" : ms < 6 * 3600e3 ? "mid" : "";
   const d = drag.get(it.id);
+  const dev = it.local ? "dev-self" : (() => { const p = state.peers.find((x) => x.id === it.holder); return p ? peerClass(p) : "dev-0"; })();
 
-  const li = el("li", "file" + (!it.local && !it.reachable ? " gone" : "") + (d && d.state === "preparing" ? " preparing" : ""));
-  li.dataset.id = it.id;
-  li.style.setProperty("--left", frac.toFixed(4));
+  const tr = el("tr", ["file", dev, ms < 3600e3 ? "low" : "", selected === it.id ? "sel" : "",
+    !it.local && !it.reachable ? "gone" : "", d && d.state === "preparing" ? "preparing" : ""].filter(Boolean).join(" "));
+  tr.dataset.id = it.id;
+  tr.tabIndex = 0;
 
-  li.append(el("div", "tile", ext(it.name)));
+  const nm = el("td", "nm");
+  nm.append(el("span", "x", ext(it.name)));
+  const fname = el("span", "fname", it.name);
+  fname.title = it.name;
+  nm.append(fname);
+  if (shell && d && d.state === "ready") nm.append(el("span", "ready", "Ready to drag out"));
+  tr.append(nm);
 
-  const main = el("div", "main");
-  main.append(el("div", "name", it.name));
-  main.firstChild.title = it.name;
-  const sub = el("div", "sub");
-  sub.append(el("span", "", it.local ? "On this device" : `From ${it.holderName || "another device"}`));
-  sub.append(el("span", "left " + level, timeLeft(ms)));
-  if (!it.local && !it.reachable) sub.append(el("span", "", "Not reachable right now"));
-  if (shell && d && d.state === "ready") sub.append(el("span", "", "Ready to drag out"));
-  main.append(sub);
-  li.append(main);
+  const from = el("td", "from");
+  const who = el("span", "who");
+  who.append(el("span", "dot"), document.createTextNode(" " + (it.local ? "This device" : (it.holderName || "Another device"))));
+  from.append(who);
+  if (!it.local && !it.reachable) from.append(el("span", "mute", " · offline"));
+  tr.append(from);
 
-  const act = el("div", "act");
-  act.append(el("span", "size", size(it.size)));
+  tr.append(el("td", "num", size(it.size)));
+
+  const exp = el("td", "exp");
+  exp.title = timeLeft(ms);
+  exp.append(ring(frac), el("span", "tl", short(ms)));
+  tr.append(exp);
+
+  tr.addEventListener("click", () => select(it.id));
+  tr.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); select(it.id); } });
+  tr.addEventListener("dblclick", () => { if (!it.local && it.reachable && !saved.has(it.id) && !saving.has(it.id)) saveFile(it); });
+
+  if (shell && (it.local || it.reachable)) {
+    tr.classList.add("draggable");
+    tr.draggable = true;
+    tr.addEventListener("pointerenter", () => prepareDrag(it));
+    tr.addEventListener("focusin", () => prepareDrag(it));
+    tr.addEventListener("dragstart", (e) => onDragStart(e, it));
+  }
+  return tr;
+}
+
+function select(id) {
+  selected = id;
+  for (const r of $("files").children) r.classList.toggle("sel", r.dataset.id === id);
+  renderBar(visibleItems());
+}
+
+function renderBar(items) {
+  const bar = $("bar");
+  bar.replaceChildren();
+  const it = items.find((i) => i.id === selected);
+  if (!it) {
+    bar.append(el("span", "mute", items.length === 0 ? "" : shell ? "Select a file to save it, or drag it out of this window to copy it anywhere." : "Select a file to save it."));
+    return;
+  }
+  const who = el("span", "who");
+  who.append(el("b", "", it.name), el("span", "mute", it.local ? " on this device" : ` from ${it.holderName || "another device"}`));
+  bar.append(who, el("span", "sp"));
   if (it.local) {
     if (!shell) {
       const a = el("a", "linkish", "Download");
       a.href = `/api/files/${encodeURIComponent(it.id)}`;
-      act.append(a);
+      bar.append(a);
     }
     const rm = el("button", "", "Remove");
     rm.type = "button";
     rm.addEventListener("click", () => removeFile(it));
-    act.append(rm);
+    bar.append(rm);
   } else if (saved.has(it.id)) {
-    act.append(el("span", "size", "Saved"));
+    bar.append(el("span", "mute", "Saved"));
     if (shell) {
-      const show = el("button", "linkish", "Show");
+      const show = el("button", "", "Show in folder");
       show.type = "button";
       show.addEventListener("click", () => shell.showInFolder(saved.get(it.id)));
-      act.append(show);
+      bar.append(show);
     }
   } else {
+    if (!it.reachable) bar.append(el("span", "mute", "Not reachable right now"));
     const sv = el("button", "primary", saving.has(it.id) ? "Saving" : "Save");
     sv.type = "button";
     sv.disabled = !it.reachable || saving.has(it.id);
     sv.addEventListener("click", () => saveFile(it));
-    act.append(sv);
+    bar.append(sv);
   }
-  li.append(act);
-
-  const fuse = el("div", "fuse " + level);
-  fuse.setAttribute("aria-hidden", "true");
-  li.append(fuse);
-
-  if (shell && (it.local || it.reachable)) {
-    li.classList.add("draggable");
-    li.draggable = true;
-    li.addEventListener("pointerenter", () => prepareDrag(it));
-    li.addEventListener("focusin", () => prepareDrag(it));
-    li.addEventListener("dragstart", (e) => onDragStart(e, it));
-  }
-  return li;
 }
 
 // ------------------------------------------------------------ actions
@@ -294,6 +406,8 @@ window.addEventListener("drop", (e) => {
   $("veil").classList.remove("on");
   shareFiles(Array.from(e.dataTransfer.files));
 });
+
+$("search").addEventListener("input", (e) => { query = e.target.value; renderFiles(); });
 
 $("addFiles").addEventListener("click", async () => {
   if (shell && shell.pickFiles) {

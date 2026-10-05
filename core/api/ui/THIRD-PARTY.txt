@@ -1,2 +1,3 @@
 qrcode.js is qrcode-generator 2.0.4 by Kazuhiko Arase, MIT licence (see the header of the file).
-fonts/bricolage.woff2 is Bricolage Grotesque, SIL Open Font License 1.1 (fonts/OFL.txt).
+fonts/jetbrainsmono.woff2 is JetBrains Mono (variable, Latin subset), SIL Open Font License 1.1 (fonts/OFL.txt).
+logo.svg and the wordmark in index.html are ephdrop's own artwork.

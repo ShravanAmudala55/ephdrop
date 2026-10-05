@@ -89,6 +89,8 @@ Phase: M2 built, needs a trial on a real Windows and Mac desktop. Core (identity
 | 2026-10-05 | Drag out works by preparing a temp copy under the real file name when the pointer is over a file | The OS drag needs a file on disk first. Copies are removed on quit, files over 1 GB are not prepared |
 | 2026-10-05 | Local API accepts only a session cookie or bearer token, a known Host header and same-origin JSON posts | Stops other web pages and other local users from driving the daemon |
 | 2026-10-05 | Devices tell paired peers when their list changes (`poke`) | New files appear on other devices at once instead of at the next 30s refresh |
+| 2026-10-05 | Window design: white blueprint sheet (navy in dark mode), JetBrains Mono, sidebar of devices plus file table, a ring timer per file | Chosen by the maintainer from mockups. Rings show how much of a file's life is left; the last hour turns red |
+| 2026-10-05 | Logo: lowercase e and capital D with a curved ribbon (behind the e, over the D) on a dusk tile; hand-drawn wordmark | Chosen by the maintainer. Files in design/logo |
 
 ## Open questions
 
@@ -121,3 +123,4 @@ Phase: M2 built, needs a trial on a real Windows and Mac desktop. Core (identity
 
 - 2026-10-05: Combined file list done (core/board). It fetches each visible paired device's list when it appears and every 30s, hides expired files, marks files of unreachable devices, and pulls from the holder. Decided against passing lists on between devices. Checks caught every case that can be observed.
 - 2026-10-05: Desktop app built (M2). Added core/node (one facade for apps), core/api (local HTTP API with cookie or token, Host and Origin checks, live events, upload and download), the window UI, `ephdropd`, and the Electron tray app in `desktop/`. Added a `poke` request so peers see new files at once. Smoke tests pass: window opens without Node access, pairing through the window, drag out files ready, peers see shared files, the window cannot navigate away, closing hides to the tray, quitting stops the daemon and removes temp copies. Not tested: a real OS drop onto the desktop, the tray icon on real Windows or Mac, installer packaging. Deliberate-break checks were not yet run on node, api and poke.
+- 2026-10-05: New window design built into the app (core/api/ui): sidebar with device filters, searchable file table with ring timers, action bar for the selected file, dark mode, narrow layout. New logo, hand-drawn wordmark and app and tray icons (design/logo, desktop/assets). Go tests pass with the race detector and the Electron smoke test passes under a virtual display. The tray icons and the real file drop onto the desktop are still untested on a real Windows or Mac.

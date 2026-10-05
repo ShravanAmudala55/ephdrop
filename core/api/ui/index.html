@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ephdrop</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app">
+  <header class="top">
+    <div class="who">
+      <h1>ephdrop</h1>
+      <span id="selfName" class="selfname"></span>
+    </div>
+    <div class="controls">
+      <label class="keep">Keep files for
+        <select id="ttl">
+          <option value="1">1 hour</option>
+          <option value="24" selected>1 day</option>
+          <option value="48">2 days</option>
+          <option value="168">7 days</option>
+        </select>
+      </label>
+      <button id="addFiles" class="primary">Add files</button>
+      <input id="filePicker" type="file" multiple hidden>
+    </div>
+  </header>
+
+  <section class="devices" aria-label="Devices">
+    <ul id="devices"></ul>
+  </section>
+
+  <main>
+    <ul id="files" class="files"></ul>
+    <div id="empty" class="empty" hidden></div>
+  </main>
+
+  <p id="hint" class="hint" hidden>Drag a file out of this window to copy it into any folder or app.</p>
+</div>
+
+<div id="veil" class="veil" aria-hidden="true"><p>Drop to share with your devices</p></div>
+<div id="toasts" class="toasts" role="status" aria-live="polite"></div>
+
+<dialog id="pairDialog">
+  <form method="dialog" class="dlg">
+    <h2>Add a device</h2>
+    <div class="tabs" role="tablist">
+      <button type="button" role="tab" id="tabShow" aria-selected="true">Show a code</button>
+      <button type="button" role="tab" id="tabEnter" aria-selected="false">Enter a code</button>
+    </div>
+    <div id="paneShow">
+      <p class="note">On the other device, open ephdrop and scan this, or paste the code.</p>
+      <div id="qr" class="qr" role="img" aria-label="Pairing code"></div>
+      <div class="codebox">
+        <input id="inviteText" readonly aria-label="Pairing code text">
+        <button type="button" id="copyInvite">Copy</button>
+      </div>
+      <p id="inviteTimer" class="note"></p>
+    </div>
+    <div id="paneEnter" hidden>
+      <p class="note">Paste the code shown on the other device.</p>
+      <textarea id="joinText" rows="4" aria-label="Code from the other device" spellcheck="false"></textarea>
+      <div class="row">
+        <button type="button" id="joinBtn" class="primary">Join</button>
+      </div>
+    </div>
+    <div class="row end"><button value="close">Close</button></div>
+  </form>
+</dialog>
+
+<dialog id="requestDialog">
+  <form method="dialog" class="dlg">
+    <h2 id="requestTitle"></h2>
+    <p class="note">It is on your network and has your code. Accept only if you started this.</p>
+    <div class="row end">
+      <button type="button" id="declineBtn">Decline</button>
+      <button type="button" id="acceptBtn" class="primary">Accept</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="removeDialog">
+  <form method="dialog" class="dlg">
+    <h2 id="removeTitle"></h2>
+    <p class="note">It will stop seeing your files and can't connect until you pair it again.</p>
+    <div class="row end">
+      <button value="keep">Keep</button>
+      <button type="button" id="removeBtn" class="danger">Remove device</button>
+    </div>
+  </form>
+</dialog>
+
+<script src="qrcode.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

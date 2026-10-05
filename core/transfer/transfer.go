@@ -4,8 +4,9 @@
 // identity.PinnedConfig), so only paired devices can talk to each other. One
 // connection carries one request.
 //
-// The client sends a single JSON line, either {"op":"list"} or
-// {"op":"get","id":"..."}. The server answers with a single JSON line. For a
+// The client sends a single JSON line: {"op":"list"}, {"op":"get","id":"..."}
+// or {"op":"poke"} (which tells the server that the client's own list of files
+// changed). The server answers with a single JSON line. For a
 // get that succeeded, the file's bytes follow the line, exactly Entry.Size of
 // them. The client checks the size and the SHA-256 hash before it keeps the
 // file, so a faulty or hostile peer cannot hand over a corrupted file.
@@ -129,6 +130,9 @@ type Server struct {
 	Shelf *shelf.Shelf
 	// Logf, if set, receives one line about each failed connection.
 	Logf func(format string, args ...any)
+	// OnPoke, if set, is called when a paired device says its list of files
+	// changed. It must not block.
+	OnPoke func(from identity.DeviceID)
 
 	// test hooks
 	idle      time.Duration
@@ -209,6 +213,10 @@ func (s *Server) handle(ctx context.Context, raw net.Conn, cfg *tls.Config) erro
 		return fmt.Errorf("handshake: %w", err)
 	}
 	conn := deadlineConn{Conn: tc, idle: s.idleTime()}
+	var from identity.DeviceID
+	if certs := tc.ConnectionState().PeerCertificates; len(certs) > 0 {
+		from, _ = identity.PeerIDFromCertificate(certs[0].Raw)
+	}
 	r := bufio.NewReaderSize(conn, 4096)
 	line, err := readLine(r, maxRequestBytes)
 	if err != nil {
@@ -223,6 +231,11 @@ func (s *Server) handle(ctx context.Context, raw net.Conn, cfg *tls.Config) erro
 		return s.list(conn)
 	case "get":
 		return s.get(conn, req.ID)
+	case "poke":
+		if s.OnPoke != nil {
+			s.OnPoke(from)
+		}
+		return writeResponse(conn, response{OK: true})
 	default:
 		return writeResponse(conn, response{Code: "bad_request", Error: "unknown operation"})
 	}
@@ -370,6 +383,17 @@ func (c *Client) List(ctx context.Context, addr string, peer identity.DeviceID) 
 		}
 	}
 	return out, nil
+}
+
+// Poke tells the device peer at addr that this device's list of files changed,
+// so it can ask for the list again.
+func (c *Client) Poke(ctx context.Context, addr string, peer identity.DeviceID) error {
+	conn, _, _, err := c.roundTrip(ctx, addr, peer, request{Op: "poke"})
+	if err != nil {
+		return err
+	}
+	conn.Close()
+	return nil
 }
 
 // checkEntry cleans an entry received from another device and reports whether

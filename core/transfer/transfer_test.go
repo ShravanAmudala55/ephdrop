@@ -829,3 +829,40 @@ func TestReadLine(t *testing.T) {
 		t.Errorf("exact length: %q %v", line, err)
 	}
 }
+
+func TestPokeReachesTheServerWithTheCallersID(t *testing.T) {
+	got := make(chan identity.DeviceID, 4)
+	r := newRigWith(t, func(s *Server) { s.OnPoke = func(id identity.DeviceID) { got <- id } })
+	if err := r.cl.Poke(ctxT(t), r.addr, r.server.id.ID()); err != nil {
+		t.Fatal(err)
+	}
+	select {
+	case id := <-got:
+		if id != r.client.id.ID() {
+			t.Errorf("poke from %s", id)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("OnPoke was not called")
+	}
+}
+
+func TestPokeWithoutACallbackIsHarmless(t *testing.T) {
+	r := newRig(t)
+	if err := r.cl.Poke(ctxT(t), r.addr, r.server.id.ID()); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestStrangersCannotPoke(t *testing.T) {
+	called := make(chan struct{}, 1)
+	r := newRigWith(t, func(s *Server) { s.OnPoke = func(identity.DeviceID) { called <- struct{}{} } })
+	stranger := &Client{Cert: newDevice(t).cert}
+	if err := stranger.Poke(ctxT(t), r.addr, r.server.id.ID()); err == nil {
+		t.Error("stranger could poke")
+	}
+	select {
+	case <-called:
+		t.Error("OnPoke ran for a stranger")
+	case <-time.After(200 * time.Millisecond):
+	}
+}

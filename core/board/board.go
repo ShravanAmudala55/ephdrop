@@ -75,6 +75,7 @@ type Board struct {
 	mu       sync.Mutex
 	peers    map[identity.DeviceID]*peerState
 	inflight map[identity.DeviceID]bool
+	again    map[identity.DeviceID]bool // a refresh was asked for while one was running
 	subs     map[int]chan struct{}
 	nextSub  int
 }
@@ -87,6 +88,7 @@ func New(self identity.DeviceID, local *shelf.Shelf, finder *discovery.Finder, r
 		self: self, local: local, finder: finder, remote: remote, allow: allow, now: time.Now,
 		peers:    map[identity.DeviceID]*peerState{},
 		inflight: map[identity.DeviceID]bool{},
+		again:    map[identity.DeviceID]bool{},
 		subs:     map[int]chan struct{}{},
 	}
 }
@@ -136,22 +138,35 @@ func (b *Board) Run(ctx context.Context) {
 	}
 }
 
-// Refresh asks one device for its list now. It does nothing if a refresh of
-// that device is already running. A failed refresh keeps the old list.
+// Refresh asks one device for its list now. If a refresh of that device is
+// already running, it asks for one more round once that one finishes (the
+// running one may have been asked before the change that made this call
+// necessary) and returns at once. A failed refresh keeps the old list.
 func (b *Board) Refresh(ctx context.Context, id identity.DeviceID) error {
 	b.mu.Lock()
 	if b.inflight[id] {
+		b.again[id] = true
 		b.mu.Unlock()
 		return nil
 	}
 	b.inflight[id] = true
 	b.mu.Unlock()
-	defer func() {
+	for {
+		err := b.refreshOnce(ctx, id)
 		b.mu.Lock()
+		if b.again[id] && ctx.Err() == nil {
+			delete(b.again, id)
+			b.mu.Unlock()
+			continue
+		}
+		delete(b.again, id)
 		delete(b.inflight, id)
 		b.mu.Unlock()
-	}()
+		return err
+	}
+}
 
+func (b *Board) refreshOnce(ctx context.Context, id identity.DeviceID) error {
 	v, ok := b.finder.Get(id)
 	if !ok {
 		return ErrUnreachable

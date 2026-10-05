@@ -275,7 +275,7 @@ func TestRefreshOfInvisibleDevice(t *testing.T) {
 	}
 }
 
-func TestConcurrentRefreshesOfOneDeviceAreMerged(t *testing.T) {
+func TestConcurrentRefreshesOfOneDeviceAreMergedIntoOneFollowUp(t *testing.T) {
 	e := newEnv(t, nil)
 	e.fake.block = make(chan struct{})
 	e.fake.set("127.0.0.1:1", entry(fid("d"), t0, time.Hour))
@@ -291,7 +291,7 @@ func TestConcurrentRefreshesOfOneDeviceAreMerged(t *testing.T) {
 	e.fake.mu.Lock()
 	n := e.fake.listN["127.0.0.1:1"]
 	e.fake.mu.Unlock()
-	if n != 1 {
+	if n != 2 { // the running one, plus one follow-up for everything asked meanwhile
 		t.Errorf("List called %d times", n)
 	}
 }
@@ -674,5 +674,35 @@ func TestDefaultRefreshInterval(t *testing.T) {
 	e.b.RefreshEvery = time.Second
 	if e.b.refreshEvery() != time.Second {
 		t.Errorf("got %v", e.b.refreshEvery())
+	}
+}
+
+func TestARefreshAskedDuringAnotherPicksUpTheNewerList(t *testing.T) {
+	e := newEnv(t, nil)
+	e.fake.set("127.0.0.1:1", entry(fid("d"), time.Now(), time.Hour))
+	e.b.now = time.Now
+	e.see(peerA, "127.0.0.1:1")
+	started := make(chan struct{})
+	release := make(chan struct{})
+	first := true
+	e.fake.onList = func() {
+		if first {
+			first = false
+			close(started)
+			<-release
+		}
+	}
+	done := make(chan struct{})
+	go func() { e.b.Refresh(context.Background(), peerA); close(done) }()
+	<-started
+	// the file list changes, and we are told, while the first answer is on its way
+	e.fake.set("127.0.0.1:1", entry(fid("d"), time.Now(), time.Hour), entry(fid("e"), time.Now(), time.Hour))
+	if err := e.b.Refresh(context.Background(), peerA); err != nil {
+		t.Fatal(err)
+	}
+	close(release)
+	<-done
+	if got := len(e.b.Items()); got != 2 {
+		t.Errorf("have %d files, want 2", got)
 	}
 }

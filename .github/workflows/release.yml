@@ -1,0 +1,80 @@
+name: Release
+
+# Push a tag like v0.1.0 and this builds the installers for Mac, Windows and
+# Linux, then attaches them to a GitHub Release anyone can download from.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: core/go.mod
+          cache-dependency-path: core/go.sum
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: desktop/package-lock.json
+      - name: Install
+        working-directory: desktop
+        run: npm ci
+
+      - name: Build for Mac (Apple Silicon and Intel)
+        if: runner.os == 'macOS'
+        working-directory: desktop
+        run: |
+          node scripts/build-daemon.js darwin arm64
+          npx electron-builder --mac dmg --arm64 --publish never
+          node scripts/build-daemon.js darwin amd64
+          npx electron-builder --mac dmg --x64 --publish never
+
+      - name: Build for Windows
+        if: runner.os == 'Windows'
+        working-directory: desktop
+        run: |
+          node scripts/build-daemon.js windows amd64
+          npx electron-builder --win nsis --x64 --publish never
+
+      - name: Build for Linux
+        if: runner.os == 'Linux'
+        working-directory: desktop
+        run: |
+          node scripts/build-daemon.js linux amd64
+          npx electron-builder --linux AppImage deb --x64 --publish never
+
+      - name: Keep the installers
+        uses: actions/upload-artifact@v4
+        with:
+          name: ephdrop-${{ runner.os }}
+          path: |
+            desktop/dist/*.dmg
+            desktop/dist/*.exe
+            desktop/dist/*.AppImage
+            desktop/dist/*.deb
+
+      - name: Attach to the release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: |
+            desktop/dist/*.dmg
+            desktop/dist/*.exe
+            desktop/dist/*.AppImage
+            desktop/dist/*.deb

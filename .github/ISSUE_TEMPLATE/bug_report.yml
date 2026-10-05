@@ -1,0 +1,42 @@
+name: Bug report
+description: Something does not work the way it should
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: Thanks for taking the time. The more you tell us, the faster it gets fixed.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What did you do, what did you expect, and what happened instead?
+    validations:
+      required: true
+  - type: dropdown
+    id: devices
+    attributes:
+      label: Which devices?
+      multiple: true
+      options: [Mac, Windows, Linux, Android, iPhone or iPad]
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Commit or installer
+      description: The commit you built from, or the installer you used.
+  - type: dropdown
+    id: network
+    attributes:
+      label: Network
+      options:
+        - Same Wi-Fi, no special setup
+        - Router with client isolation or guest network
+        - VPN on one or more devices
+        - Different subnets
+        - Not sure
+  - type: textarea
+    id: logs
+    attributes:
+      label: Anything from the log or an error message
+      render: text

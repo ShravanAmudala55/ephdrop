@@ -11,7 +11,8 @@
     "start": "npm run daemon && electron .",
     "test": "npm run daemon && EPHDROPD=$PWD/bin/ephdropd xvfb-run -a node test/smoke.js",
     "dist": "npm run daemon && electron-builder",
-    "dist:linux": "npm run daemon && electron-builder --linux"
+    "dist:linux": "npm run daemon && electron-builder --linux",
+    "dist:mac": "electron-builder --mac --publish never"
   },
   "devDependencies": {
     "electron": "^41.0.0",
@@ -56,7 +57,8 @@
       "maintainer": "ephdrop <shravan.amudala55@gmail.com>",
       "executableName": "ephdrop"
     },
-    "publish": null
+    "publish": null,
+    "artifactName": "ephdrop-${version}-${os}-${arch}.${ext}"
   },
   "author": {
     "name": "ephdrop",

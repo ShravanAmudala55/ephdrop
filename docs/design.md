@@ -43,7 +43,7 @@ The device's own addresses come from the mDNS layer's normal A and AAAA records.
 **Finder**. Keeps the set of paired devices that are visible now, with their addresses:
 
 - Only paired ids are tracked, and our own id is ignored, so strangers' announcements use no memory.
-- A device that goes quiet is dropped after 2 minutes (the usual mDNS record lifetime). A goodbye removes it at once.
+- A device that goes quiet is dropped after 2 minutes (the usual mDNS record lifetime). Where a backend reports goodbyes, one removes the device at once. The Go mDNS backend cannot, because the library throws goodbyes away, so it relies on the 2 minute expiry.
 - Changes are delivered as `Appeared`, `Updated` and `Disappeared` events. A slow subscriber never blocks the Finder and can resync with `Peers()`.
 - `Hint(id, addrs)` lets the user type an address by hand for networks where announcements do not get through (routers with client isolation, VPNs). Hints never expire. After pairing, the joiner can hint the inviter's invite addresses.
 - When a device is unpaired it disappears from the Finder immediately, and `Forget` clears what is stored.
@@ -52,7 +52,7 @@ The device's own addresses come from the mDNS layer's normal A and AAAA records.
 
 | Platform | Backend |
 |----------|---------|
-| Windows, Mac | Go mDNS library (planned) |
+| Windows, Mac | Go mDNS backend (`core/discovery/mdns`, grandcat/zeroconf). It browses in 30 second sessions, advertises a neutral host name and private addresses only, and reads addresses when it starts, so restart the Finder when the network changes |
 | Android | Android NSD, or the Go library with a multicast lock held (to decide) |
 | iOS | System Bonjour (`NWBrowser`, `NetService`), reporting into `Finder.Seen` |
 

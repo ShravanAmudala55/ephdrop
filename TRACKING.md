@@ -4,7 +4,7 @@ Last updated: 2026-10-05
 
 ## Status
 
-Phase: M1 in progress. Identity, pinned TLS, pairing and discovery logic are done. Next: the file list, then the mDNS backend.
+Phase: M1 in progress. Identity, pinned TLS, pairing, discovery logic and the mDNS backend are done. Next: the file list, then transfer.
 
 ## Milestones
 
@@ -19,7 +19,7 @@ Phase: M1 in progress. Identity, pinned TLS, pairing and discovery logic are don
 - [x] Go module set up in core/
 - [x] Device identity (ed25519 keypair generated on first run, saved with 0600 permissions)
 - [x] Discovery format and logic (core/discovery): announcement format, paired-only Finder, expiry, goodbye, manual address hints, events
-- [ ] mDNS backend for Windows and Mac using a Go library. Blocked for now: the cloud workspace cannot download Go modules (see open questions)
+- [x] mDNS backend for Windows and Mac (core/discovery/mdns, grandcat/zeroconf v1.0.0, vendored only for offline builds)
 - [x] Pairing by invite (shared secret, mutual proof bound to the TLS session, single use, expiry, attempt limit). QR rendering and scanning belong to the clients
 - [x] Pinned TLS config: TLS 1.3, both sides present certs, peer key hash checked against paired ids (identity/tls.go)
 - [ ] Encrypted transport server and client built on the pinned TLS config
@@ -93,7 +93,7 @@ Phase: M1 in progress. Identity, pinned TLS, pairing and discovery logic are don
 - Maximum file size and per device storage cap?
 - Should expiry be changeable after a file is added?
 
-- Go mDNS library: which one (for example grandcat/zeroconf or hashicorp/mdns), and how to get it into the project. The cloud workspace blocks the Go module proxy, so it has to be fetched on a machine with access.
+- Dependencies pulled in by zeroconf v1.0.0 are old (miekg/dns 1.1.27, x/net, x/sys, x/crypto). Consider `go get -u` for them and rerun the tests.
 - Privacy of announcements: the device id in the TXT record is stable. Rotating beacons (a value derived from the id and the time, which paired devices can recognise) would stop outsiders on the Wi-Fi from tracking a device, at the cost of complexity.
 
 ## Risks
@@ -110,3 +110,4 @@ Phase: M1 in progress. Identity, pinned TLS, pairing and discovery logic are don
 - 2026-10-05: Discovery logic done (core/discovery, 31 tests, 81 across core, 21 deliberately broken versions all caught). Announcement format, Finder with paired-only tracking, expiry, hints and events. The real mDNS backend is not written yet.
 - 2026-10-05: Pairing done (core/pairing, 31 tests, 50 across core, security checks verified by breaking each one on purpose). CLI gained `invite`, `join`, `peers`, `unpair`.
 - 2026-10-05: M1 started. Added core/identity (keypair, device id, key storage, pinned TLS config) with 15 tests, plus `ephdrop id` command.
+- 2026-10-05: mDNS backend done (core/discovery/mdns). Browse restarts every 30s because the library reports each device once per session and drops goodbyes. Falls back to IPv4-only when IPv6 multicast is missing. Advertises with a neutral host name and private addresses only, so the computer name and public IPs are not published. Tested with two devices over real multicast. Mutation checks caught all but a few cases that need a faulty library to reach.

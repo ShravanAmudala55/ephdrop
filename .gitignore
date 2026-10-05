@@ -27,3 +27,7 @@ DerivedData/
 # Editors
 .idea/
 .vscode/
+
+# Vendored Go modules and bundles, only used for offline builds
+vendor/
+*.tgz

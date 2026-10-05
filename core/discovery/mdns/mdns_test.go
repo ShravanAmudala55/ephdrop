@@ -5,6 +5,8 @@ import (
 	"errors"
 	"net"
 	"net/netip"
+	"os"
+	"runtime"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -268,6 +270,12 @@ func multicastIfaces() []net.Interface {
 // TestIntegrationDevicesFindEachOther runs a real announcement and a real
 // browse over the network. It needs working multicast and is skipped without it.
 func TestIntegrationDevicesFindEachOther(t *testing.T) {
+	// GitHub's hosted macOS runners are VMs that do not deliver multicast
+	// between two sockets on the same machine, so the browser never hears the
+	// announcer there. The test passes on a real Mac and on Linux CI.
+	if runtime.GOOS == "darwin" && os.Getenv("CI") != "" {
+		t.Skip("multicast between local sockets does not work on hosted macOS CI runners")
+	}
 	ifaces := multicastIfaces()
 	if len(ifaces) == 0 {
 		t.Skip("no multicast capable network interface with an IPv4 address")

@@ -4,6 +4,8 @@
 // Without it this page still works in a browser, just without dragging files
 // out and without picking files by path.
 const shell = window.ephdropShell || null;
+// The Android app adds window.ephdropAndroid (see clients/android).
+const phone = window.ephdropAndroid || null;
 
 const $ = (id) => document.getElementById(id);
 let state = { self: {}, peers: [], items: [], invite: null };
@@ -322,7 +324,12 @@ async function saveFile(it) {
   try {
     const r = await api("POST", "/api/fetch", { holder: it.holder, id: it.id });
     saved.set(it.id, r.path);
-    toast(`Saved ${it.name}`);
+    if (phone && phone.exportFile) {
+      // the phone app moves the file into the Downloads folder and says so itself
+      phone.exportFile(r.path, it.name);
+    } else {
+      toast(`Saved ${it.name}`);
+    }
   } catch (e) {
     toast(friendly(e), true);
   } finally {
@@ -491,6 +498,19 @@ $("copyInvite").addEventListener("click", async () => {
     toast("Press Ctrl+C to copy the selected code");
   }
 });
+
+if (phone && phone.scanInvite) {
+  $("scanBtn").hidden = false;
+  $("scanBtn").addEventListener("click", () => phone.scanInvite());
+}
+// called by the phone app with the text of a scanned QR code
+window.onInviteScanned = (text) => {
+  if (!pairDialog.open) pairDialog.showModal();
+  showTab("enter");
+  stopInvite();
+  $("joinText").value = String(text || "");
+  $("joinBtn").click();
+};
 
 $("joinBtn").addEventListener("click", async () => {
   const text = $("joinText").value.trim();

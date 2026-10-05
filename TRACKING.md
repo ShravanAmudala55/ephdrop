@@ -42,12 +42,13 @@ Phase: M2 built, needs a trial on a real Windows and Mac desktop. Core (identity
 
 ### M3: Android client
 - [x] Go side for phones (`core/mobile`): start and stop, local page address, discovery fed by the app, invites that use addresses the app supplies. Tested here, including two agents pairing and sharing, with deliberate-break checks. Not yet built into an .aar (needs gomobile and the Android SDK on a computer that can reach them)
-- [ ] Core bound into the app (build the .aar with gomobile, add the Kotlin shell around the window page)
-- [ ] Foreground service for background sync
-- [ ] Share sheet target: share any file into ephdrop
+- [x] Kotlin app written (clients/android): foreground service, web view of the window, file picker, share sheet target, QR scan button, save to Downloads/ephdrop, discovery through Android NSD. Written without being able to compile it
+- [ ] Build it on a real computer: run build-lib.sh, open clients/android in Android Studio, fix whatever it complains about
+- [x] Foreground service for background sync (written, untested)
+- [x] Share sheet target: share any file into ephdrop (written, untested)
 - [ ] Battery optimisation guidance in the app
-- [ ] Scan the QR code to pair (camera) and show our own invite
-- [ ] Discovery backend: Android NSD, or Go mDNS with a multicast lock
+- [x] Scan the QR code to pair (Google code scanner) and show our own invite (written, untested)
+- [x] Discovery backend: Android NSD feeding the Go program (written, untested)
 - [ ] Pair with Windows by QR code
 
 ### M4: iOS client
@@ -129,3 +130,4 @@ Phase: M2 built, needs a trial on a real Windows and Mac desktop. Core (identity
 - 2026-10-05: The app is now always the white design. Before, it followed the system theme and turned navy on computers set to dark mode (which is why the Mac and Windows trial looked off). Navy is kept as an option that is off by default.
 - 2026-10-05: Added 'Open at login' (right-click the tray icon; off by default; starts hidden in the tray). Works on Mac and Windows only, and the setting itself is not testable on the Linux test machine, so it needs a try on a real computer.
 - 2026-10-05: Started M3. Added core/mobile, the one small Go interface both phone apps will use (start, stop, page address, discovery reports from the system, no direct interface listing). Added a way for the app to give its own addresses for invites, because Go on Android can be blocked from listing interfaces. Plan: the Android app is a thin Kotlin shell (foreground service, web view of the existing window, file picker, share sheet, QR scanner) so the window you already tried is reused. Cannot build an .apk on the test machine (no route to the Android SDK).
+- 2026-10-05: Wrote the Android app (clients/android) and the build script. Android Studio, SDK, NDK and Go are installed on his Mac. The Kotlin cannot be compiled on the test machine, so it is untested; the Go side it uses (core/mobile) is tested and compiles for Android arm64. The window page gained a Scan QR button and a save-to-Downloads hook that only appear inside the Android app.

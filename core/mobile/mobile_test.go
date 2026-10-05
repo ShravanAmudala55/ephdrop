@@ -3,6 +3,8 @@ package mobile
 import (
 	"io"
 	"net"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -27,6 +29,7 @@ func myIP(t *testing.T) string {
 
 func startAgent(t *testing.T, name, ips string) *Agent {
 	t.Helper()
+	t.Setenv("TMPDIR", os.Getenv("TMPDIR")) // Start changes it; put it back afterwards
 	a, err := Start(t.TempDir(), name, t.TempDir(), fakeNative{ips})
 	if err != nil {
 		t.Fatal(err)
@@ -71,11 +74,11 @@ func TestTwoAgentsPairAndShare(t *testing.T) {
 
 	// The app hears each device and says so. A hears B before B has been heard
 	// by anyone else; B hears A twice, which is normal.
-	if err := a.Seen(b.ID(), "127.0.0.1", b.TransferPort(), "1"); err != nil {
+	if err := a.Seen(b.DeviceID(), "127.0.0.1", b.TransferPort(), "1"); err != nil {
 		t.Fatal(err)
 	}
 	for i := 0; i < 2; i++ {
-		if err := b.Seen(a.ID(), "127.0.0.1", a.TransferPort(), "1"); err != nil {
+		if err := b.Seen(a.DeviceID(), "127.0.0.1", a.TransferPort(), "1"); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -132,7 +135,7 @@ func TestSeenRefusesBadAdvertisements(t *testing.T) {
 	if err := a.Seen(strings.Repeat("a", 26), "10.0.0.6", 0, "1"); err == nil {
 		t.Error("port 0 accepted")
 	}
-	if err := a.Seen(a.ID(), "10.0.0.6", 4000, "1"); err != nil {
+	if err := a.Seen(a.DeviceID(), "10.0.0.6", 4000, "1"); err != nil {
 		t.Errorf("own advertisement should be ignored quietly: %v", err)
 	}
 }
@@ -162,17 +165,31 @@ func TestInviteWithNoAddressesSaysSo(t *testing.T) {
 }
 
 func TestStopTwiceAndPortsAreSet(t *testing.T) {
+	t.Setenv("TMPDIR", os.Getenv("TMPDIR"))
 	a, err := Start(t.TempDir(), "p", t.TempDir(), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if a.Port() == 0 || a.TransferPort() == 0 || len(a.ID()) != 26 || a.Token() == "" || !strings.Contains(a.URL(), "token="+a.Token()) {
-		t.Fatalf("bad agent: %d %d %q", a.Port(), a.TransferPort(), a.ID())
+	if a.Port() == 0 || a.TransferPort() == 0 || len(a.DeviceID()) != 26 || a.Token() == "" || !strings.Contains(a.PageURL(), "token="+a.Token()) {
+		t.Fatalf("bad agent: %d %d %q", a.Port(), a.TransferPort(), a.DeviceID())
 	}
 	a.Stop()
 	a.Stop()
 	if c, err := net.DialTimeout("tcp", net.JoinHostPort("127.0.0.1", itoa(a.Port())), 300*time.Millisecond); err == nil {
 		c.Close()
 		t.Error("server still listening after Stop")
+	}
+}
+
+func TestTemporaryFilesGoInsideTheDataFolder(t *testing.T) {
+	t.Setenv("TMPDIR", os.Getenv("TMPDIR"))
+	dir := t.TempDir()
+	a, err := Start(dir, "p", t.TempDir(), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer a.Stop()
+	if got := os.TempDir(); got != filepath.Join(dir, "tmp") {
+		t.Fatalf("temporary folder is %q", got)
 	}
 }

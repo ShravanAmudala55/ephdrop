@@ -18,6 +18,8 @@ import (
 	"fmt"
 	"net"
 	"net/netip"
+	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 
@@ -49,6 +51,13 @@ type Agent struct {
 // shown to others and downloads is where saved files go. It returns once the
 // node is running.
 func Start(dir, name, downloads string, native Native) (*Agent, error) {
+	// On Android the default temporary folder is not writable. Use one inside
+	// the app's own data instead.
+	tmp := filepath.Join(dir, "tmp")
+	if err := os.MkdirAll(tmp, 0o700); err != nil {
+		return nil, err
+	}
+	os.Setenv("TMPDIR", tmp)
 	back := &nativeBackend{}
 	cfg := node.Config{Dir: dir, Name: name, DownloadDir: downloads, Listen: ":0", Backend: back}
 	if native != nil {
@@ -82,8 +91,8 @@ func Start(dir, name, downloads string, native Native) (*Agent, error) {
 	return a, nil
 }
 
-// URL is the address of the window's page. Opening it signs the web view in.
-func (a *Agent) URL() string {
+// PageURL is the address of the window's page. Opening it signs the web view in.
+func (a *Agent) PageURL() string {
 	return fmt.Sprintf("http://127.0.0.1:%d/?token=%s", a.port, a.srv.Token())
 }
 
@@ -95,8 +104,8 @@ func (a *Agent) Token() string { return a.srv.Token() }
 // Port is the local web server's port, on 127.0.0.1.
 func (a *Agent) Port() int { return a.port }
 
-// ID is this device's id. Put it in the advertisement.
-func (a *Agent) ID() string { return string(a.node.ID()) }
+// DeviceID is this device's id. Put it in the advertisement.
+func (a *Agent) DeviceID() string { return string(a.node.ID()) }
 
 // TransferPort is the port other devices connect to. Put it in the
 // advertisement.

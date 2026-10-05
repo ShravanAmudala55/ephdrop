@@ -16,6 +16,13 @@
 </p>
 
 <p align="center">
+  <a href="LICENSE"><img alt="MIT licence" src="https://img.shields.io/badge/licence-MIT-2447f5"></a>
+  <a href="https://github.com/ShravanAmudala55/ephdrop/actions/workflows/ci.yml"><img alt="Tests" src="https://github.com/ShravanAmudala55/ephdrop/actions/workflows/ci.yml/badge.svg"></a>
+  <a href="CONTRIBUTING.md"><img alt="Contributions welcome" src="https://img.shields.io/badge/contributions-welcome-0a8f86"></a>
+  <img alt="Mac, Windows, Linux, Android, iPhone" src="https://img.shields.io/badge/platforms-Mac%20%7C%20Windows%20%7C%20Linux%20%7C%20Android%20%7C%20iPhone-7a3fd1">
+</p>
+
+<p align="center">
   <img src="docs/screenshots/window.png" alt="The ephdrop window: files from three devices, each with a ring that shows how long it has left" width="760">
 </p>
 
@@ -98,6 +105,16 @@ See [clients/android](clients/android/README.md) and [clients/ios](clients/ios/R
 - **Expiry:** each file has an expiry time stored with it. A sweep removes expired files and the list never shows them.
 
 The longer version, including what is not protected, is in [docs/design.md](docs/design.md).
+
+## Help build it
+
+ephdrop is young, and there is real work for people who want to help. You can:
+
+- **Try it** on your own devices and tell us what happened. Real-device reports are the most useful thing right now.
+- **Pick up something from the list** in [CONTRIBUTING.md](CONTRIBUTING.md). Each item says what it is and who it suits. Docs, Linux testing, Android, iPhone and Go are all open.
+- **Report a bug or share an idea** in [issues](https://github.com/ShravanAmudala55/ephdrop/issues).
+
+You do not have to write code. If ephdrop sounds useful, a star on GitHub helps other people find it.
 
 ## Not for
 

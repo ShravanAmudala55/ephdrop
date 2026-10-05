@@ -52,7 +52,15 @@ commands:
   invite         print a pairing invite and wait for another device to join
   join <invite>  pair with the device that made the invite
   peers          list paired devices
-  unpair <id>    forget a paired device`)
+  unpair <id>    forget a paired device
+  serve [-port n] [-ttl 24h] [file...]
+                 share files (and anything shared before) with paired devices
+  list [-addr host:port] <device>
+                 show what a paired device is sharing
+  get [-addr host:port] [-o folder] <device> <file id>
+                 download a file from a paired device
+
+<device> is the start of a paired device's id (see: ephdrop peers).`)
 }
 
 func run(args []string) error {
@@ -78,6 +86,12 @@ func run(args []string) error {
 		return needArgs(cmd, rest, 1, func() error { return cmdJoin(*dir, *name, rest[0]) })
 	case "peers":
 		return needArgs(cmd, rest, 0, func() error { return cmdPeers(*dir) })
+	case "serve":
+		return cmdServe(*dir, rest)
+	case "list":
+		return cmdList(*dir, rest)
+	case "get":
+		return cmdGet(*dir, rest)
 	case "unpair":
 		return needArgs(cmd, rest, 1, func() error { return cmdUnpair(*dir, rest[0]) })
 	default:
@@ -208,23 +222,13 @@ func cmdUnpair(dir, id string) error {
 	if err != nil {
 		return err
 	}
-	// Allow a unique prefix, since full ids are long.
-	var match []pairing.Peer
-	for _, p := range store.List() {
-		if strings.HasPrefix(string(p.ID), strings.ToLower(id)) {
-			match = append(match, p)
-		}
+	match, err := matchPeer(store, id)
+	if err != nil {
+		return err
 	}
-	switch len(match) {
-	case 0:
-		return fmt.Errorf("no paired device with id starting %q", id)
-	case 1:
-		if err := store.Remove(match[0].ID); err != nil {
-			return err
-		}
-		fmt.Printf("Unpaired %q (%s).\n", match[0].Name, match[0].ID.Short())
-		return nil
-	default:
-		return fmt.Errorf("%q matches %d devices, give more of the id", id, len(match))
+	if err := store.Remove(match.ID); err != nil {
+		return err
 	}
+	fmt.Printf("Unpaired %q (%s).\n", match.Name, match.ID.Short())
+	return nil
 }

@@ -4,7 +4,7 @@ Last updated: 2026-10-05
 
 ## Status
 
-Phase: M1 in progress. Identity, pinned TLS, pairing, discovery logic and the mDNS backend are done. Next: the file list, then transfer.
+Phase: M1 nearly done. Identity, pairing, discovery, the file shelf and transfer work end to end. Left: list gossip between peers, tests for list merge, resume.
 
 ## Milestones
 
@@ -22,12 +22,12 @@ Phase: M1 in progress. Identity, pinned TLS, pairing, discovery logic and the mD
 - [x] mDNS backend for Windows and Mac (core/discovery/mdns, grandcat/zeroconf v1.0.0, vendored only for offline builds)
 - [x] Pairing by invite (shared secret, mutual proof bound to the TLS session, single use, expiry, attempt limit). QR rendering and scanning belong to the clients
 - [x] Pinned TLS config: TLS 1.3, both sides present certs, peer key hash checked against paired ids (identity/tls.go)
-- [ ] Encrypted transport server and client built on the pinned TLS config
+- [x] Transport server and client on the pinned TLS config (core/transfer): list and get, size and hash checks, limits, timeouts, cancel
 - [x] File list and local storage (core/shelf): id, name, size, SHA-256, owner, created, expires. Files are copied into the shelf, ttl 1 day by default and 7 days at most, expired files are hidden at once
 - [ ] List gossip between paired peers
-- [ ] Pull a file from a peer by id
+- [x] Pull a file from a peer by id (resume of interrupted downloads still to do)
 - [x] Expiry sweep (shelf.Sweep deletes expired files and entries). Still to do: call it on a timer from the running app
-- [ ] Command line tool to drive the core for testing (done: `id`, `invite`, `join`, `peers`, `unpair`. To add: list, add, get, once the file list exists)
+- [ ] Command line tool to drive the core for testing (done: `id`, `invite`, `join`, `peers`, `unpair`, `serve`, `list`, `get`. Limit: one process per data directory)
 - [x] Tests for pairing (invites, store, full handshakes, attacks)
 - [ ] Tests for list merge and expiry
 
@@ -112,3 +112,4 @@ Phase: M1 in progress. Identity, pinned TLS, pairing, discovery logic and the mD
 - 2026-10-05: M1 started. Added core/identity (keypair, device id, key storage, pinned TLS config) with 15 tests, plus `ephdrop id` command.
 - 2026-10-05: mDNS backend done (core/discovery/mdns). Browse restarts every 30s because the library reports each device once per session and drops goodbyes. Falls back to IPv4-only when IPv6 multicast is missing. Advertises with a neutral host name and private addresses only, so the computer name and public IPs are not published. Tested with two devices over real multicast. Mutation checks caught all but a few cases that need a faulty library to reach.
 - 2026-10-05: Dependencies pinned to versions that build on Go 1.24 (the 2019/2020 ones failed to link on newer macOS Go). Real mDNS test passes on the Mac. Local file shelf done (core/shelf): streaming copy with hash and size limit, names cleaned, index saved atomically, stray and missing files cleaned on open, expiry sweep. Deliberate-break checks caught every case except two that cannot be observed (file permission default and fsync).
+- 2026-10-05: Transfer done (core/transfer) and wired into the CLI (`serve`, `list`, `get`). Two paired devices shared and downloaded a 3 MB file byte for byte in an end to end run. A server that is busy makes new clients wait rather than turning them away. Deliberate-break checks caught every case that can be observed. Not yet tried on two real machines.

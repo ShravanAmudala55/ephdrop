@@ -114,11 +114,23 @@ Expiry is absolute time, set when the file is added. Clocks can differ a little 
 
 ## Transfer
 
-1. User taps a file in the list.
-2. The device asks a peer that holds the content (starting with the owner) over TLS: `GET /files/{id}`.
-3. The file streams with range support so interrupted downloads resume.
-4. The receiver checks the sha256 against the list entry.
-5. The file is stored locally until it expires or the user deletes it.
+Built (`core/transfer`). One TLS 1.3 connection carries one request, and both ends are pinned to paired device keys, so only paired devices can connect. The client also checks that the device it reached is the one it asked for.
+
+The client sends one JSON line:
+
+- `{"op":"list"}` returns `{"ok":true,"entries":[...]}`.
+- `{"op":"get","id":"..."}` returns `{"ok":true,"entry":{...}}` and then exactly `entry.size` bytes of the file.
+- Failures return `{"ok":false,"code":"not_found"|"bad_request"|"internal","error":"..."}`.
+
+What the receiver does before it keeps a file:
+
+- Checks the description (id shape, size not negative, hash is 64 lowercase hex characters) and cleans the name, so a hostile name such as `../../x` becomes `x`.
+- Downloads to a temporary file in the target folder, checks the size and the SHA-256 hash, and rejects any extra data after the file.
+- Gives the file its final name without overwriting anything (`name (1).ext` if needed). A failed download leaves nothing behind.
+
+Limits: requests are at most 1 KB, responses at most 4 MB, lists at most 10,000 entries, 16 connections are served at once (others wait), and a connection with no data moving for 30 seconds is closed. Cancelling stops a running transfer at once.
+
+Not built yet: resuming an interrupted download (range requests), and the open question below.
 
 Open question: whether peers that already pulled a file also serve it.
 

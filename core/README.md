@@ -10,6 +10,7 @@ Go library shared by all clients: identity, discovery, pairing, file list, trans
 | `pairing` | done | one time invites, paired device list, pairing handshake |
 | `discovery` | logic done, mDNS backend in `discovery/mdns` | announcement format, Finder for visible paired devices, address hints |
 | `shelf` | done | this device's shared files: copy in, hash, list, open, remove, expiry and sweep |
+| `transfer` | done | list and pull files between paired devices over pinned TLS, with size and hash checks |
 | `internal/atomicfile` | done | crash safe file writes |
 | `cmd/ephdrop` | in progress | development command line driver |
 
@@ -33,5 +34,19 @@ Pair two devices (or two terminals, each with its own `-dir`):
 ./ephdrop -dir /tmp/a peers
 ./ephdrop -dir /tmp/a unpair <start of id>
 ```
+
+Share and download files (A and B paired as above):
+
+```
+# on A: share files, keep running
+./ephdrop -dir /tmp/a serve photo.jpg notes.txt
+
+# on B: find A on the network, list its files, pull one
+./ephdrop -dir /tmp/b list <start of A's id>
+./ephdrop -dir /tmp/b get <start of A's id> <file id>
+# if automatic finding does not work, add: -addr host:port
+```
+
+`serve` shares files for 24 hours unless you pass `-ttl` (at most 168h), and deletes them when they expire. Run only one `ephdrop` process per data directory at a time: the paired devices and the shared files are read when it starts.
 
 Other commands: `id` shows this device's id and public key. Without `-dir`, data goes in your user config directory under `ephdrop/` (`identity.key` and `peers.json`, owner-only permissions).

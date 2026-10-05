@@ -53,7 +53,7 @@ function startPeer() {
   console.log("ok  window opened with the page");
 
   const keys = await win.evaluate(() => Object.keys(window.ephdropShell).sort());
-  assert.deepStrictEqual(keys, ["maxDragBytes", "pathForFile", "pickFiles", "prepareDrag", "showInFolder", "startDrag"]);
+  assert.deepStrictEqual(keys, ["hidePanel", "maxDragBytes", "openMain", "pathForFile", "pickFiles", "prepareDrag", "quit", "showInFolder", "startDrag"]);
   assert.strictEqual(await win.evaluate(() => typeof window.require + typeof window.process), "undefinedundefined");
   console.log("ok  the page gets only the narrow shell API and no Node");
 
@@ -110,6 +110,16 @@ function startPeer() {
   // the peer sees our file too
   await until(async () => (await peerApi("GET", "/api/state")).body.items.some((i) => i.name === "my notes.txt"), "peer sees my file");
   console.log("ok  the other device sees the file shared from the window");
+
+  // the tray panel lists the same files, is hidden until the icon is clicked,
+  // and can bring the main window forward
+  const panelPage = app.windows().find((w) => w.url().endsWith("/panel.html"));
+  assert.ok(panelPage, "tray panel exists");
+  await panelPage.waitForSelector("#list li", { state: "attached" });
+  assert.ok((await panelPage.locator("#list li").count()) >= 1, "panel lists files");
+  assert.ok(/Sharing with 1 device/.test(await panelPage.textContent("#status")), "panel shows device count");
+  assert.strictEqual(await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().filter((w) => w.webContents.getURL().endsWith("/panel.html"))[0].isVisible()), false);
+  console.log("ok  the tray panel lists files and starts hidden");
 
   await win.screenshot({ path: path.join(tmp, "window.png") });
   fs.copyFileSync(path.join(tmp, "window.png"), process.env.SHOT || "/tmp/desktop-window.png");

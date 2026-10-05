@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ephdrop</title>
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="panel.css">
+</head>
+<body class="panel">
+<header class="ph">
+  <img src="logo.svg" alt="" width="30" height="30">
+  <div class="who">
+    <strong>ephdrop</strong>
+    <span id="status" class="mute">Starting</span>
+  </div>
+  <button id="add" class="primary" type="button">Add files</button>
+</header>
+<ul id="list" class="pl" aria-label="Recent files"></ul>
+<p id="empty" class="pe" hidden>Nothing shared yet. Add a file and it shows up on your other devices.</p>
+<footer class="pf">
+  <button id="open" type="button">Open ephdrop</button>
+  <button id="quit" type="button" class="linkish">Quit</button>
+</footer>
+<script src="panel.js"></script>
+</body>
+</html>

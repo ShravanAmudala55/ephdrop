@@ -1,0 +1,18 @@
+/* The little window that drops from the menu bar or tray. */
+body.panel { display: flex; flex-direction: column; height: 100%; overflow: hidden; border: 1px solid var(--line); }
+.ph { display: flex; align-items: center; gap: 10px; padding: 14px 14px 12px; border-bottom: 1px dashed var(--line); background: color-mix(in srgb, var(--side) 92%, transparent); }
+.ph .who { display: flex; flex-direction: column; line-height: 1.25; min-width: 0; flex: 1; }
+.ph .who strong { font-size: 14px; font-weight: 650; }
+.mute { color: var(--mute); font-size: 12px; }
+.pl { flex: 1; min-height: 0; overflow-y: auto; }
+.pl li { display: flex; align-items: center; gap: 10px; padding: 9px 14px; border-bottom: 1px dashed var(--line); cursor: default; }
+.pl li:hover { background: var(--hover); }
+.pl .ring { margin: 0; flex: none; }
+.pl li.low .tl { color: var(--danger); }
+.pl .t { min-width: 0; flex: 1; }
+.pl .t .n { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pl .t .f { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--mute); }
+.pl .tl { font-size: 12px; color: var(--mute); flex: none; }
+.pe { margin: 0; padding: 22px 18px; color: var(--mute); flex: 1; }
+.pf { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; border-top: 1px solid var(--line); background: color-mix(in srgb, var(--side) 92%, transparent); }
+.pf .linkish { color: var(--mute); }

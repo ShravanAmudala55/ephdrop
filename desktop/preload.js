@@ -16,4 +16,8 @@ contextBridge.exposeInMainWorld("ephdropShell", {
   startDrag: (path) => ipcRenderer.send("start-drag", path),
   pickFiles: () => ipcRenderer.invoke("pick-files"),
   showInFolder: (path) => ipcRenderer.send("show-in-folder", path),
+  // used by the small tray panel
+  openMain: () => ipcRenderer.send("panel-open-main"),
+  hidePanel: () => ipcRenderer.send("panel-hide"),
+  quit: () => ipcRenderer.send("panel-quit"),
 });

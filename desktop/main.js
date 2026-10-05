@@ -2,7 +2,7 @@
 // ephdrop desktop shell: starts the Go program (ephdropd), shows its page in a
 // window, lives in the tray, and lets files be dragged out of the window.
 
-const { app, BrowserWindow, Tray, Menu, nativeImage, nativeTheme, ipcMain, dialog, shell } = require("electron");
+const { app, BrowserWindow, Tray, Menu, nativeImage, nativeTheme, screen, ipcMain, dialog, shell } = require("electron");
 const { spawn } = require("child_process");
 const fs = require("fs");
 const os = require("os");
@@ -15,6 +15,8 @@ let daemonInfo = null; // {url, port, id}
 let origin = null;
 let win = null;
 let tray = null;
+let panel = null;
+let panelHiddenAt = 0;
 let quitting = false;
 
 const cacheDir = () => path.join(app.getPath("temp"), "ephdrop-drag");
@@ -125,18 +127,60 @@ function showWindow() {
   win.focus();
 }
 
+// The panel is a small window under the tray icon. It only ever shows our own page.
+function createPanel() {
+  panel = new BrowserWindow({
+    width: 340, height: 430, show: false, frame: false, resizable: false,
+    movable: false, minimizable: false, maximizable: false, fullscreenable: false,
+    skipTaskbar: true, alwaysOnTop: true,
+    backgroundColor: nativeTheme.shouldUseDarkColors ? "#0b2a4a" : "#ffffff",
+    webPreferences: {
+      preload: path.join(__dirname, "preload.js"),
+      contextIsolation: true, sandbox: true, nodeIntegration: false, spellcheck: false,
+    },
+  });
+  // the session cookie is set when the main page first loads, so wait for it
+  const loadPanel = () => panel.loadURL(`${origin}/panel.html`);
+  if (win.webContents.isLoading()) win.webContents.once("did-finish-load", loadPanel); else loadPanel();
+  panel.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
+  panel.webContents.on("will-navigate", (e, url) => {
+    if (new URL(url).origin !== origin) e.preventDefault();
+  });
+  panel.on("blur", () => { if (!panel.webContents.isDevToolsOpened()) { panel.hide(); panelHiddenAt = Date.now(); } });
+  panel.on("close", (e) => { if (!quitting) { e.preventDefault(); panel.hide(); } });
+}
+
+function togglePanel() {
+  if (!panel) return showWindow();
+  // clicking the icon while the panel is open blurs it first; do not reopen it
+  if (panel.isVisible() || Date.now() - panelHiddenAt < 300) { panel.hide(); return; }
+  const tb = tray.getBounds();
+  const { width, height } = panel.getBounds();
+  const display = screen.getDisplayNearestPoint({ x: tb.x, y: tb.y });
+  const wa = display.workArea;
+  let x = Math.round(tb.x + tb.width / 2 - width / 2);
+  let y = process.platform === "darwin" ? tb.y + tb.height + 4 : tb.y - height - 8;
+  x = Math.min(Math.max(x, wa.x + 8), wa.x + wa.width - width - 8);
+  y = Math.min(Math.max(y, wa.y + 8), wa.y + wa.height - height - 8);
+  panel.setPosition(x, y, false);
+  panel.show();
+  panel.focus();
+}
+
 function createTray() {
   const file = process.platform === "darwin" ? "trayTemplate.png" : "tray.png";
   const img = nativeImage.createFromPath(path.join(__dirname, "assets", file));
   if (process.platform === "darwin") img.setTemplateImage(true);
   tray = new Tray(img);
   tray.setToolTip("ephdrop");
-  tray.setContextMenu(Menu.buildFromTemplate([
+  const menu = Menu.buildFromTemplate([
     { label: "Open ephdrop", click: showWindow },
     { type: "separator" },
     { label: "Quit", click: () => app.quit() },
-  ]));
-  tray.on("click", showWindow);
+  ]);
+  tray.on("click", togglePanel);
+  tray.on("right-click", () => tray.popUpContextMenu(menu));
+  createPanel();
 }
 
 // ------------------------------------------------------------ talking to the page
@@ -199,7 +243,7 @@ ipcMain.on("start-drag", (event, file) => {
 
 ipcMain.handle("pick-files", async (event) => {
   if (!fromOurPage(event)) throw new Error("not allowed");
-  const r = await dialog.showOpenDialog(win, { title: "Choose files to share", properties: ["openFile", "multiSelections"] });
+  const r = await dialog.showOpenDialog(...(event.sender === win.webContents ? [win] : []), { title: "Choose files to share", properties: ["openFile", "multiSelections"] });
   return r.canceled ? [] : r.filePaths;
 });
 
@@ -208,6 +252,14 @@ ipcMain.on("show-in-folder", (event, file) => {
   const p = String(file);
   if (path.isAbsolute(p) && fs.existsSync(p)) shell.showItemInFolder(p);
 });
+
+ipcMain.on("panel-open-main", (event) => {
+  if (!fromOurPage(event)) return;
+  if (panel) panel.hide();
+  showWindow();
+});
+ipcMain.on("panel-hide", (event) => { if (fromOurPage(event) && panel) panel.hide(); });
+ipcMain.on("panel-quit", (event) => { if (fromOurPage(event)) app.quit(); });
 
 ipcMain.on("shell-info", (event) => {
   event.returnValue = { maxDragBytes: MAX_DRAG_BYTES };

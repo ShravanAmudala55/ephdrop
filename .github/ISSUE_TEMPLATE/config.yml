@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Ask a question
+    url: https://github.com/ShravanAmudala55/ephdrop/discussions
+    about: For questions and ideas that are not ready to be an issue

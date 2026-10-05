@@ -42,17 +42,34 @@ Known issue: some routers isolate Wi-Fi clients and block mDNS. A manual "add by
 
 ## Pairing
 
-One time, by QR code.
+One time, by QR code. Implemented in `core/pairing`.
 
-1. Device A shows a QR code containing: its device id, its public key, its address and port, and a random 128 bit pairing secret.
-2. Device B scans it and connects to A over TLS.
-3. B proves it has the secret (HMAC over both public keys) and sends its own public key.
-4. A verifies, shows "pair with B?" for confirmation, and both store each other's public keys.
-5. The pairing secret is discarded.
+The invite (shown as a QR code, text form `ephdrop://pair/...`, about 190 characters) holds:
 
-After this, devices only talk to peers whose public keys they have stored. Connections use TLS with pinned peer keys, so other people on the Wi-Fi cannot read or join.
+- the inviter's public key
+- up to 8 `host:port` addresses on the local network
+- a random 128 bit secret
+- an expiry time (5 minutes by default)
 
-Removing a device deletes its stored key. Re-pairing is required to rejoin.
+Steps:
+
+1. Device A (inviter) listens and shows the invite.
+2. Device B (joiner) scans it and connects to A over TLS 1.3. B accepts only the key from the QR code, so a device that merely sits at A's address is refused before any secret is sent. The QR code is the trusted channel.
+3. B sends `hello` with its name and a proof: HMAC-SHA256 over the secret, a role label, the TLS session's exported keying material, and both public keys. Binding the proof to the TLS session means a recorded proof cannot be replayed on another connection.
+4. A checks the proof. Only if it is valid does A ask its user "pair with B?". A device without the QR code never gets a prompt shown.
+5. If the user agrees, A saves B, then replies `accept` with its own proof so B knows A also holds the secret. B saves A.
+6. The invite is used up. Pairing another device needs a new invite.
+
+Limits and safeguards:
+
+- Five wrong secrets close the invite. Connections that are not valid TLS or not valid messages are ignored and do not count.
+- Messages are single lines of JSON, capped at 4 KB. Names from the other device are stripped of control characters and capped at 64 characters.
+- The user's decline is final for that invite.
+- A peer's stored id must equal the hash of its stored key, both when adding and when loading the file.
+
+After pairing, devices connect with `identity.PinnedConfig` and `Store.Allow`, so only paired keys can connect. Peers are kept in `peers.json` (owner only permissions). `ephdrop unpair` or `Store.Remove` forgets a device, and re-pairing is needed to rejoin.
+
+Not covered by the protocol: showing and scanning the QR code. The core produces and parses the invite string, and each client renders and scans it.
 
 ## File list
 

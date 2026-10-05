@@ -9,6 +9,8 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+
+	"github.com/ShravanAmudala55/ephdrop/core/internal/atomicfile"
 )
 
 // KeyFileName is the name of the private key file inside the data directory.
@@ -69,41 +71,15 @@ func Load(path string) (*Identity, error) {
 }
 
 // Save writes the private key to path with owner-only permissions. The write
-// goes to a temporary file first and is renamed into place, so a crash never
-// leaves a half written key behind.
-func (i *Identity) Save(path string) (err error) {
+// is atomic, so a crash never leaves a half written key behind.
+func (i *Identity) Save(path string) error {
 	der, err := x509.MarshalPKCS8PrivateKey(i.priv)
 	if err != nil {
 		return fmt.Errorf("identity: encode key: %w", err)
 	}
 	data := pem.EncodeToMemory(&pem.Block{Type: pemType, Bytes: der})
-
-	tmp, err := os.CreateTemp(filepath.Dir(path), ".identity-*")
-	if err != nil {
-		return fmt.Errorf("identity: create temp file: %w", err)
-	}
-	tmpName := tmp.Name()
-	defer func() {
-		if err != nil {
-			tmp.Close()
-			os.Remove(tmpName)
-		}
-	}()
-
-	if err = tmp.Chmod(0o600); err != nil {
-		return fmt.Errorf("identity: chmod key: %w", err)
-	}
-	if _, err = tmp.Write(data); err != nil {
-		return fmt.Errorf("identity: write key: %w", err)
-	}
-	if err = tmp.Sync(); err != nil {
-		return fmt.Errorf("identity: sync key: %w", err)
-	}
-	if err = tmp.Close(); err != nil {
-		return fmt.Errorf("identity: close key: %w", err)
-	}
-	if err = os.Rename(tmpName, path); err != nil {
-		return fmt.Errorf("identity: install key: %w", err)
+	if err := atomicfile.Write(path, data, 0o600); err != nil {
+		return fmt.Errorf("identity: save key: %w", err)
 	}
 	return nil
 }

@@ -1,0 +1,55 @@
+{
+  "name": "ephdrop-desktop",
+  "productName": "ephdrop",
+  "version": "0.1.0",
+  "description": "Share files between your devices on your own network. Files expire on their own.",
+  "main": "main.js",
+  "private": true,
+  "license": "UNLICENSED",
+  "scripts": {
+    "daemon": "node scripts/build-daemon.js",
+    "start": "npm run daemon && electron .",
+    "test": "npm run daemon && EPHDROPD=$PWD/bin/ephdropd xvfb-run -a node test/smoke.js",
+    "dist": "npm run daemon && electron-builder"
+  },
+  "devDependencies": {
+    "electron": "^41.0.0",
+    "playwright-core": "^1.50.0",
+    "electron-builder": "^26.0.0"
+  },
+  "build": {
+    "appId": "org.ephdrop.desktop",
+    "productName": "ephdrop",
+    "files": [
+      "main.js",
+      "preload.js",
+      "assets/**"
+    ],
+    "extraResources": [
+      {
+        "from": "bin",
+        "to": "bin"
+      }
+    ],
+    "mac": {
+      "category": "public.app-category.utilities",
+      "target": [
+        "dmg"
+      ],
+      "icon": "assets/icon.png"
+    },
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "icon": "assets/icon.png"
+    },
+    "linux": {
+      "target": [
+        "AppImage"
+      ],
+      "icon": "assets/icon.png",
+      "category": "Utility"
+    }
+  }
+}

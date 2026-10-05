@@ -15,14 +15,16 @@ Draft 1, 2026-10-05. Everything here can change.
 +---------------------------+
 | Client app (per platform) |  UI, share sheet, background service
 +-------------+-------------+
-              |
+              |  desktop: local HTTP API, mobile: gomobile (planned)
 +-------------v-------------+
-| core (Go)                 |
+| core/node (Go)            |  one facade for apps
 |  identity   pairing       |
 |  discovery  file list     |
 |  transport  expiry        |
 +---------------------------+
 ```
+
+Every platform has its own app over the same core, so any mix of devices works. See Desktop app below.
 
 ## Identity
 
@@ -121,6 +123,7 @@ The client sends one JSON line:
 
 - `{"op":"list"}` returns `{"ok":true,"entries":[...]}`.
 - `{"op":"get","id":"..."}` returns `{"ok":true,"entry":{...}}` and then exactly `entry.size` bytes of the file.
+- `{"op":"poke"}` tells the peer that this device's list changed. It returns `{"ok":true}` and the peer fetches the list again soon. The poke carries no data, so it cannot add files.
 - Failures return `{"ok":false,"code":"not_found"|"bad_request"|"internal","error":"..."}`.
 
 What the receiver does before it keeps a file:
@@ -134,6 +137,17 @@ Limits: requests are at most 1 KB, responses at most 4 MB, lists at most 10,000 
 Not built yet: resuming an interrupted download (range requests), and the open question below.
 
 Open question: whether peers that already pulled a file also serve it.
+
+## Desktop app
+
+Built (`core/node`, `core/api`, `core/cmd/ephdropd`, `desktop/`).
+
+- `ephdropd` runs the core and serves a local HTTP API and the window UI on 127.0.0.1. It prints one JSON line with its address and a one time token.
+- The Electron app starts `ephdropd`, shows its page in a window, and keeps a tray icon. Closing the window hides it, and the device keeps sharing. Quit from the tray stops it.
+- Dropping files on the window shares them (with a choice of expiry). Dragging a file out of the window to a folder or another app copies it: a temp copy under the real name is prepared when the pointer is over the file, then the OS drag starts. Copies are deleted on quit.
+- Pairing shows the invite as a QR code and as text. To join, paste an invite. Scanning with the desktop camera is not built.
+
+Local API security: the page is only served for a known Host header (stops DNS rebinding), a token in the first URL is exchanged for an HttpOnly SameSite=Strict cookie, scripts may instead send the token as a bearer header, changing requests must be same-origin JSON, and responses carry a strict content security policy. In the Electron app the page has no Node access, it cannot navigate away, and the drag helper only accepts paths inside its temp folder.
 
 ## Expiry
 

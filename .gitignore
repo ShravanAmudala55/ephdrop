@@ -31,3 +31,8 @@ DerivedData/
 # Vendored Go modules and bundles, only used for offline builds
 vendor/
 *.tgz
+
+# Desktop app
+desktop/node_modules/
+desktop/bin/
+desktop/dist/

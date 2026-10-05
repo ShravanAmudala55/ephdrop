@@ -4,7 +4,7 @@ Last updated: 2026-10-05
 
 ## Status
 
-Phase: M1 nearly done. Identity, pairing, discovery, shelf, transfer and the combined file list work. Left: resume of interrupted downloads, trying it on two real machines. Next: M2 (desktop app).
+Phase: M2 built, needs a trial on a real Windows and Mac desktop. Core (identity, pairing, discovery, shelf, transfer, file list, change pokes), local API, window UI and Electron tray app work and pass tests. Left in M1: resume of interrupted downloads, trying it on two real machines. Left in M2: run at login, scan a QR code on desktop, installer packaging check. Next: M3 (Android).
 
 ## Milestones
 
@@ -13,7 +13,7 @@ Phase: M1 nearly done. Identity, pairing, discovery, shelf, transfer and the com
 - [x] Private repo created: github.com/ShravanAmudala55/ephdrop
 - [x] README, tracking and design doc written
 - [ ] Choose licence (see decisions)
-- [ ] Decide core language binding approach (gomobile vs native per platform)
+- [ ] Decide core language binding approach for mobile (gomobile vs native). Desktop uses a daemon
 
 ### M1: Go core, two peers on one machine
 - [x] Go module set up in core/
@@ -31,13 +31,14 @@ Phase: M1 nearly done. Identity, pairing, discovery, shelf, transfer and the com
 - [x] Tests for pairing (invites, store, full handshakes, attacks)
 - [x] Tests for the combined list and expiry (core/board)
 
-### M2: Windows client
-- [ ] Choose UI approach (see open questions)
-- [ ] Show the invite as a QR code and scan one to pair
-- [ ] Tray app with file list
-- [ ] Drag and drop to add a file with expiry choice
-- [ ] Download on click
+### M2: Desktop client (Windows and Mac)
+- [x] Choose UI approach: Go daemon plus Electron shell (see decisions)
+- [x] Show the invite as a QR code; paste an invite to join. Scanning a QR code on desktop is not built
+- [x] Tray app with file list (window hides to the tray on close)
+- [x] Drag and drop to add a file with expiry choice
+- [x] Download on click, and drag a file out of the window to any folder or app
 - [ ] Runs at login in the background
+- [ ] Try on a real Windows and Mac desktop (tray icon, drag out, `npm run dist` installers)
 
 ### M3: Android client
 - [ ] Core bound into the app
@@ -83,12 +84,16 @@ Phase: M1 nearly done. Identity, pairing, discovery, shelf, transfer and the com
 | 2026-10-05 | Core returns the invite as text; clients draw and scan the QR code | Keeps the core free of UI and camera dependencies |
 | 2026-10-05 | Discovery is pluggable: shared announcement format and Finder logic in the core, platform backends outside | iOS cannot use raw multicast without an Apple entitlement (checked against Apple TN3179), so it must use system Bonjour |
 | 2026-10-05 | Only local-network addresses are accepted from announcements | A hostile device cannot make us connect to the internet |
+| 2026-10-05 | Every platform gets its own app over the shared core, and any mix of devices works | Households have different devices, so no platform may depend on another |
+| 2026-10-05 | Desktop app is a Go daemon (`ephdropd`) with a local HTTP API, shown by an Electron window and tray | A real file drag out of the window needs an OS file path, which a plain browser cannot give. The window UI is plain HTML served by the daemon |
+| 2026-10-05 | Drag out works by preparing a temp copy under the real file name when the pointer is over a file | The OS drag needs a file on disk first. Copies are removed on quit, files over 1 GB are not prepared |
+| 2026-10-05 | Local API accepts only a session cookie or bearer token, a known Host header and same-origin JSON posts | Stops other web pages and other local users from driving the daemon |
+| 2026-10-05 | Devices tell paired peers when their list changes (`poke`) | New files appear on other devices at once instead of at the next 30s refresh |
 
 ## Open questions
 
 - Licence: MIT, Apache 2.0 or GPL?
-- UI for desktop: native per platform, Flutter, or a small web UI served locally?
-- Does the core run as a library inside each app (gomobile) or as a separate local daemon on desktop?
+- Mobile: bind the core with gomobile on Android and iOS? (Desktop is decided: separate daemon.)
 - Do files stay on the device that added them only, or can other devices that pulled a file also serve it?
 - Maximum file size and per device storage cap?
 - Should expiry be changeable after a file is added?
@@ -115,3 +120,4 @@ Phase: M1 nearly done. Identity, pairing, discovery, shelf, transfer and the com
 - 2026-10-05: Transfer done (core/transfer) and wired into the CLI (`serve`, `list`, `get`). Two paired devices shared and downloaded a 3 MB file byte for byte in an end to end run. A server that is busy makes new clients wait rather than turning them away. Deliberate-break checks caught every case that can be observed. Not yet tried on two real machines.
 
 - 2026-10-05: Combined file list done (core/board). It fetches each visible paired device's list when it appears and every 30s, hides expired files, marks files of unreachable devices, and pulls from the holder. Decided against passing lists on between devices. Checks caught every case that can be observed.
+- 2026-10-05: Desktop app built (M2). Added core/node (one facade for apps), core/api (local HTTP API with cookie or token, Host and Origin checks, live events, upload and download), the window UI, `ephdropd`, and the Electron tray app in `desktop/`. Added a `poke` request so peers see new files at once. Smoke tests pass: window opens without Node access, pairing through the window, drag out files ready, peers see shared files, the window cannot navigate away, closing hides to the tray, quitting stops the daemon and removes temp copies. Not tested: a real OS drop onto the desktop, the tray icon on real Windows or Mac, installer packaging. Deliberate-break checks were not yet run on node, api and poke.

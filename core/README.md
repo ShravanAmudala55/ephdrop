@@ -12,8 +12,11 @@ Go library shared by all clients: identity, discovery, pairing, file list, trans
 | `shelf` | done | this device's shared files: copy in, hash, list, open, remove, expiry and sweep |
 | `board` | done | the file list a user sees: own files plus other devices' files, reachability, pulling |
 | `transfer` | done | list and pull files between paired devices over pinned TLS, with size and hash checks |
+| `node` | done | one facade over all of the above for apps: start, share, fetch, pair, events |
+| `api` | done | local HTTP API and embedded window UI used by the desktop app |
 | `internal/atomicfile` | done | crash safe file writes |
 | `cmd/ephdrop` | in progress | development command line driver |
+| `cmd/ephdropd` | done | background daemon for the desktop app, see [../desktop](../desktop/README.md) |
 
 ## Try it
 

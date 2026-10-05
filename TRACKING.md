@@ -12,7 +12,7 @@ Phase: M2 built, needs a trial on a real Windows and Mac desktop. Core (identity
 - [x] Name chosen: ephdrop
 - [x] Private repo created: github.com/ShravanAmudala55/ephdrop
 - [x] README, tracking and design doc written
-- [ ] Choose licence (see decisions)
+- [x] Choose licence: MIT
 - [ ] Decide core language binding approach for mobile (gomobile vs native). Desktop uses a daemon
 
 ### M1: Go core, two peers on one machine
@@ -66,7 +66,7 @@ Phase: M2 built, needs a trial on a real Windows and Mac desktop. Core (identity
 - [ ] Same features as Windows
 
 ### M6: Release
-- [ ] Choose licence and add LICENSE file
+- [x] Choose licence and add LICENSE file (MIT)
 - [ ] Security review of pairing and transport
 - [ ] Make the repo public
 - [ ] Publish releases (Windows, Mac, Android apk, iOS ipa)
@@ -97,7 +97,7 @@ Phase: M2 built, needs a trial on a real Windows and Mac desktop. Core (identity
 
 ## Open questions
 
-- Licence: MIT, Apache 2.0 or GPL?
+- Licence: MIT (chosen 2026-10-05). Simple, and fits an app people may copy and change freely.
 - Mobile: bind the core with gomobile on Android and iOS? (Desktop is decided: separate daemon.)
 - Do files stay on the device that added them only, or can other devices that pulled a file also serve it?
 - Maximum file size and per device storage cap?
@@ -134,3 +134,4 @@ Phase: M2 built, needs a trial on a real Windows and Mac desktop. Core (identity
 - 2026-10-05: Wrote the Android app (clients/android) and the build script. Android Studio, SDK, NDK and Go are installed on his Mac. The Kotlin cannot be compiled on the test machine, so it is untested; the Go side it uses (core/mobile) is tested and compiles for Android arm64. The window page gained a Scan QR button and a save-to-Downloads hook that only appear inside the Android app.
 - 2026-10-05: Linux: the desktop app now handles Linux trays (menu instead of clicks, panel placed in a corner), has Open at login through an autostart file, and builds an AppImage and a .deb. Built both here; the packaged app starts its bundled program and stops it on quit. Not tried on a real Linux desktop.
 - 2026-10-05: iOS: wrote the SwiftUI app (clients/ios) and build scripts: web view of the same window, Bonjour discovery feeding the Go program, camera QR scan, Open in ephdrop, saved files in the Files app, runs only while open. Needs XcodeGen. Could not compile Swift on the test machine, so it is untested. The window page now calls the phone helper window.ephdropPhone on both phone apps.
+- 2026-10-05: Chose the MIT licence and added the LICENSE file. Rewrote the README with the logo and screenshots.

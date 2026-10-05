@@ -133,4 +133,4 @@ Early. The core and the desktop apps work and were tried between a Mac and a Win
 
 ## License
 
-Not chosen yet.
+[MIT](LICENSE). The JetBrains Mono font in the window is under the SIL Open Font License, see `core/api/ui/fonts/OFL.txt`.

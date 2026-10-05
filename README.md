@@ -81,7 +81,7 @@ npm install
 npm start
 ```
 
-`npm start` builds the background program and opens the app. Installers are built with `npm run dist` (see [desktop/README.md](desktop/README.md)). Only the Linux ones (`.AppImage`, `.deb`) have been test-built so far; the Mac and Windows installers have not.
+`npm start` builds the background program and opens the app. Installers are built with `npm run dist` (see [desktop/README.md](desktop/README.md)). The installers for all three systems are built automatically for each [release](https://github.com/ShravanAmudala55/ephdrop/releases). The Mac and Windows installers build successfully but have not been installed and run on a real machine from the release yet.
 
 ### Android and iPhone
 

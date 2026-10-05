@@ -54,6 +54,10 @@ type Config struct {
 	Listen string
 	// Backend finds other devices. Defaults to multicast DNS.
 	Backend discovery.Backend
+	// LocalIPs lists this device's own IPv4 addresses for invites. Phone apps
+	// supply it because a Go program on Android may not list interfaces. If
+	// nil, the interfaces are listed.
+	LocalIPs func() []string
 
 	// Intervals. Zero means the default.
 	RefreshEvery time.Duration
@@ -420,7 +424,13 @@ func (n *Node) StartInvite(ctx context.Context) (*InviteSession, error) {
 	if err != nil {
 		return nil, err
 	}
-	addrs := pairing.LocalAddrs(ln.Addr().(*net.TCPAddr).Port)
+	port := ln.Addr().(*net.TCPAddr).Port
+	var addrs []string
+	if n.cfg.LocalIPs != nil {
+		addrs = pairing.AddrsFromIPs(n.cfg.LocalIPs(), port)
+	} else {
+		addrs = pairing.LocalAddrs(port)
+	}
 	if len(addrs) == 0 {
 		ln.Close()
 		return nil, ErrNoNetwork

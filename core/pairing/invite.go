@@ -131,6 +131,28 @@ func validateAddrs(addrs []string) error {
 	return nil
 }
 
+// AddrsFromIPs turns IP addresses that the app found itself into invite
+// addresses with the given port. Phones use this because a Go program on
+// Android is not always allowed to list the network interfaces. Only IPv4
+// addresses that are not loopback or link local are kept.
+func AddrsFromIPs(ips []string, port int) []string {
+	seen := map[string]bool{}
+	var out []string
+	for _, s := range ips {
+		ip := net.ParseIP(strings.TrimSpace(s)).To4()
+		if ip == nil || ip.IsLoopback() || ip.IsLinkLocalUnicast() || ip.IsUnspecified() || seen[ip.String()] {
+			continue
+		}
+		seen[ip.String()] = true
+		out = append(out, net.JoinHostPort(ip.String(), strconv.Itoa(port)))
+	}
+	sort.Strings(out)
+	if len(out) > maxAddrs {
+		out = out[:maxAddrs]
+	}
+	return out
+}
+
 // LocalAddrs lists this machine's non-loopback IPv4 addresses with the given
 // port, for use in an invite.
 func LocalAddrs(port int) []string {

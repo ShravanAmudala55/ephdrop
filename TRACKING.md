@@ -4,7 +4,7 @@ Last updated: 2026-10-05
 
 ## Status
 
-Phase: M2 built, needs a trial on a real Windows and Mac desktop. Core (identity, pairing, discovery, shelf, transfer, file list, change pokes), local API, window UI and Electron tray app work and pass tests. Left in M1: resume of interrupted downloads, trying it on two real machines. Left in M2: run at login, scan a QR code on desktop, installer packaging check. Next: M3 (Android).
+Phase: M2 built, needs a trial on a real Windows and Mac desktop. Core (identity, pairing, discovery, shelf, transfer, file list, change pokes), local API, window UI and Electron tray app work and pass tests. Left in M1: resume of interrupted downloads, trying it on two real machines. Left in M2: run at login, scan a QR code on desktop, installer packaging check. Started M3 (Android): the Go side for phones is done and tested; the Kotlin app is not written yet.
 
 ## Milestones
 
@@ -41,7 +41,8 @@ Phase: M2 built, needs a trial on a real Windows and Mac desktop. Core (identity
 - [ ] Try on a real Windows and Mac desktop (tray icon, drag out, `npm run dist` installers)
 
 ### M3: Android client
-- [ ] Core bound into the app
+- [x] Go side for phones (`core/mobile`): start and stop, local page address, discovery fed by the app, invites that use addresses the app supplies. Tested here, including two agents pairing and sharing, with deliberate-break checks. Not yet built into an .aar (needs gomobile and the Android SDK on a computer that can reach them)
+- [ ] Core bound into the app (build the .aar with gomobile, add the Kotlin shell around the window page)
 - [ ] Foreground service for background sync
 - [ ] Share sheet target: share any file into ephdrop
 - [ ] Battery optimisation guidance in the app
@@ -127,3 +128,4 @@ Phase: M2 built, needs a trial on a real Windows and Mac desktop. Core (identity
 - 2026-10-05: Trial on a Mac and a Windows laptop: pairing, sharing and dragging between them all worked. Fixed what he found: the Mac menu bar icon was twice too big and a solid tile, so it is now a small template icon (the e and D with the ribbon, no tile). Clicking the tray icon now opens a small panel (recent files with ring timers, Add files, Open, Quit) instead of only a menu; right click still shows the menu. The Windows laptop showed the old design because the new design commit had not been pushed yet. Panel checked in the Electron smoke test; not yet seen on a real menu bar or Windows taskbar.
 - 2026-10-05: The app is now always the white design. Before, it followed the system theme and turned navy on computers set to dark mode (which is why the Mac and Windows trial looked off). Navy is kept as an option that is off by default.
 - 2026-10-05: Added 'Open at login' (right-click the tray icon; off by default; starts hidden in the tray). Works on Mac and Windows only, and the setting itself is not testable on the Linux test machine, so it needs a try on a real computer.
+- 2026-10-05: Started M3. Added core/mobile, the one small Go interface both phone apps will use (start, stop, page address, discovery reports from the system, no direct interface listing). Added a way for the app to give its own addresses for invites, because Go on Android can be blocked from listing interfaces. Plan: the Android app is a thin Kotlin shell (foreground service, web view of the existing window, file picker, share sheet, QR scanner) so the window you already tried is reused. Cannot build an .apk on the test machine (no route to the Android SDK).

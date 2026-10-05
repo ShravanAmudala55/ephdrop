@@ -1,45 +1,136 @@
-# ephdrop
+<p align="center">
+  <img src="design/logo/ephdrop-logo.svg" alt="ephdrop logo" width="120" height="120">
+</p>
 
-Ephemeral local file drop. Drop a file on one device, pull it on another, and it deletes itself after a day or two.
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="design/logo/wordmark-regular-light.svg">
+    <img src="design/logo/wordmark-regular.svg" alt="ephdrop" width="260">
+  </picture>
+</p>
 
-Status: planning (see [TRACKING.md](TRACKING.md)).
+<p align="center">
+  <strong>A local dropbox for your home.</strong><br>
+  Drop a file on one device, pull it on another. It deletes itself after a day.<br>
+  No cloud. No account. No server.
+</p>
 
-## The idea
+<p align="center">
+  <img src="docs/screenshots/window.png" alt="The ephdrop window: files from three devices, each with a ring that shows how long it has left" width="760">
+</p>
 
-Households mix iPhone, Android, Windows and Mac, and sharing files between them is painful. ephdrop is a small open source app for all four platforms:
+## Why
 
-- No server and no cloud. Devices find each other on the home Wi-Fi and transfer files directly.
-- No account. Devices pair once with a QR code.
-- Files expire. Every file carries an expiry time (default 1 or 2 days) and each device deletes it on its own.
-- Tap to pull. Devices share a small list of what is available. A file is only downloaded when you tap it.
+Homes mix iPhone, Android, Windows and Mac, and moving one file between them is still annoying. Email and chat apps upload your files to someone else's server. AirDrop and Quick Share each only talk to their own kind.
 
-## Platform behaviour
+ephdrop is one small app for all of them. Devices find each other on your Wi-Fi and send files directly.
 
-| Platform | Role |
-|----------|------|
-| Windows | Background peer, stays in sync, hosts files |
-| Mac | Background peer, stays in sync, hosts files |
-| Android | Background peer (needs battery optimisation off) |
-| iOS | Foreground client: open the app, see the list, tap to pull. Distributed as an .ipa for SideStore |
+- **Nothing leaves your network.** There is no server in the middle and no internet connection is used.
+- **No account.** Pair two devices once by scanning a QR code.
+- **Files expire.** Every file has a timer, one day by default. The ring next to it shows how much is left, and each device deletes the file on its own when time is up.
+- **Tap to pull.** Devices share a list of what is available. A file is only downloaded when you ask for it.
 
-## Not goals
+## Where it works
 
-- Long term sync or backup (use Syncthing or Resilio for that)
-- Sharing over the internet
-- Version history or conflict resolution
+Every platform has its own app over the same Go core, so any mix of devices works together.
 
-## Layout
+| Device | How it runs | Status |
+|--------|-------------|--------|
+| Mac | Menu bar app. Stays in sync in the background | Tried on a real Mac |
+| Windows | Tray app. Stays in sync in the background | Tried on a real laptop |
+| Linux | Tray app (AppImage and .deb) | Builds and passes tests. Not tried on a real desktop yet |
+| Android | App with a background service | Written. Not built on a phone yet |
+| iPhone and iPad | App that runs while it is open, installed with SideStore | Written. Not built on a device yet |
+
+iPhones do not let apps keep sharing in the background. On an iPhone, open ephdrop to see the list and pull files. Files shared from the phone can be fetched by your other devices while the app is open.
+
+## Try it
+
+### Mac, Windows and Linux
+
+You need [Node.js](https://nodejs.org) and [Go](https://go.dev/dl/).
 
 ```
-core/            Go library: discovery, pairing, file list, transfer, expiry
-clients/windows  Windows app
-clients/mac      Mac app
-clients/android  Android app
-clients/ios      iOS app (SwiftUI)
-docs/            Design notes
+git clone https://github.com/ShravanAmudala55/ephdrop
+cd ephdrop/desktop
+npm install
+npm start
 ```
 
-## Docs
+`npm start` builds the background program and opens the app. Installers are built with `npm run dist` (see [desktop/README.md](desktop/README.md)). Only the Linux ones (`.AppImage`, `.deb`) have been test-built so far; the Mac and Windows installers have not.
 
-- [Design](docs/design.md)
-- [Tracking](TRACKING.md)
+### Android and iPhone
+
+See [clients/android](clients/android/README.md) and [clients/ios](clients/ios/README.md). Both build the same Go program with gomobile and wrap the same window in a thin native shell.
+
+### Pair two devices
+
+1. On the first device choose **Add device**. It shows a QR code.
+2. On the second device choose **Add device**. A phone scans the code. A computer pastes it (scanning on computers is not built yet). A code works once and stops after five minutes.
+3. Accept on the first device. They stay paired until you remove one.
+
+## How it feels
+
+<p align="center">
+  <img src="docs/screenshots/panel.png" alt="The small panel that opens from the menu bar or tray icon" width="260">
+</p>
+
+- Add files by dragging them onto the window, or with **Add files**. On a phone, use the Share menu.
+- On a computer, drag a file out of the window straight onto your desktop or into another app.
+- Click the menu bar or tray icon for a small panel with your latest files.
+- Choose how long files stay (1 hour to 7 days) with **Keep for**.
+
+## How it works
+
+```
+ your phone                          your laptop
+┌──────────────┐   same Wi-Fi    ┌──────────────┐
+│ ephdrop app  │ ◄── mDNS ─────► │ ephdrop app  │
+│  Go core     │                 │  Go core     │
+│   own files  │ ◄── TLS 1.3 ──► │   own files  │
+└──────────────┘  direct, paired └──────────────┘
+```
+
+- **Finding each other:** devices announce themselves with DNS-SD (`_ephdrop._tcp`). Phones use the system's own Bonjour or NSD.
+- **Knowing who is who:** each device makes an ed25519 key on first run. Its id is a hash of the public key.
+- **Pairing:** the QR code carries the inviter's key and addresses plus a one-time secret. Both sides must confirm. After that each device only talks to devices it has paired with.
+- **Moving files:** a TLS 1.3 connection pinned to the paired key. A file is only sent when the other device asks for it.
+- **Expiry:** each file has an expiry time stored with it. A sweep removes expired files and the list never shows them.
+
+The longer version, including what is not protected, is in [docs/design.md](docs/design.md).
+
+## Not for
+
+- Backup or long term sync. Use Syncthing or similar.
+- Sending files over the internet.
+- Version history or merging changes.
+
+## Project layout
+
+```
+core/             Go: identity, pairing, discovery, shelf, transfer, board, node, api
+core/mobile/      The small Go interface the phone apps use
+desktop/          Electron app for Mac, Windows and Linux
+clients/android/  Android app (Kotlin)
+clients/ios/      iPhone and iPad app (SwiftUI)
+design/logo/      Logo, wordmark and tray icons
+docs/             Design notes
+TRACKING.md       Plan, decisions and progress
+```
+
+## Tests
+
+```
+cd core && go test -race ./...
+cd desktop && npm test        # needs xvfb, Linux only
+```
+
+The tests cover the Go core (including two devices pairing and sharing end to end) and the desktop app in a real Electron window.
+
+## Status
+
+Early. The core and the desktop apps work and were tried between a Mac and a Windows laptop. The phone apps are written but have not been built on a real device, so expect rough edges. Progress and open questions are in [TRACKING.md](TRACKING.md).
+
+## License
+
+Not chosen yet.

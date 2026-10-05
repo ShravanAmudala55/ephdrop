@@ -4,7 +4,7 @@ Last updated: 2026-10-05
 
 ## Status
 
-Phase: M1 in progress. Identity, pinned TLS and pairing are done. Next: mDNS discovery.
+Phase: M1 in progress. Identity, pinned TLS, pairing and discovery logic are done. Next: the file list, then the mDNS backend.
 
 ## Milestones
 
@@ -18,7 +18,8 @@ Phase: M1 in progress. Identity, pinned TLS and pairing are done. Next: mDNS dis
 ### M1: Go core, two peers on one machine
 - [x] Go module set up in core/
 - [x] Device identity (ed25519 keypair generated on first run, saved with 0600 permissions)
-- [ ] mDNS discovery of peers on the LAN
+- [x] Discovery format and logic (core/discovery): announcement format, paired-only Finder, expiry, goodbye, manual address hints, events
+- [ ] mDNS backend for Windows and Mac using a Go library. Blocked for now: the cloud workspace cannot download Go modules (see open questions)
 - [x] Pairing by invite (shared secret, mutual proof bound to the TLS session, single use, expiry, attempt limit). QR rendering and scanning belong to the clients
 - [x] Pinned TLS config: TLS 1.3, both sides present certs, peer key hash checked against paired ids (identity/tls.go)
 - [ ] Encrypted transport server and client built on the pinned TLS config
@@ -44,9 +45,11 @@ Phase: M1 in progress. Identity, pinned TLS and pairing are done. Next: mDNS dis
 - [ ] Share sheet target: share any file into ephdrop
 - [ ] Battery optimisation guidance in the app
 - [ ] Scan the QR code to pair (camera) and show our own invite
+- [ ] Discovery backend: Android NSD, or Go mDNS with a multicast lock
 - [ ] Pair with Windows by QR code
 
 ### M4: iOS client
+- [ ] Discovery through system Bonjour (`NWBrowser` and `NetService`) feeding `Finder.Seen`. Add `_ephdrop._tcp` to NSBonjourServices and write NSLocalNetworkUsageDescription
 - [ ] SwiftUI app using the core
 - [ ] Foreground only: connect on open, show list, tap to pull
 - [ ] Share extension to drop files in
@@ -78,6 +81,8 @@ Phase: M1 in progress. Identity, pinned TLS and pairing are done. Next: mDNS dis
 | 2026-10-05 | Repo stays private until M6 | Make it public once it works and is reviewed |
 | 2026-10-05 | Pairing proof is bound to the TLS session; invites last 5 minutes, work once, and close after 5 wrong secrets | Stops replay and guessing, and an attacker without the QR code never triggers a prompt |
 | 2026-10-05 | Core returns the invite as text; clients draw and scan the QR code | Keeps the core free of UI and camera dependencies |
+| 2026-10-05 | Discovery is pluggable: shared announcement format and Finder logic in the core, platform backends outside | iOS cannot use raw multicast without an Apple entitlement (checked against Apple TN3179), so it must use system Bonjour |
+| 2026-10-05 | Only local-network addresses are accepted from announcements | A hostile device cannot make us connect to the internet |
 
 ## Open questions
 
@@ -88,15 +93,20 @@ Phase: M1 in progress. Identity, pinned TLS and pairing are done. Next: mDNS dis
 - Maximum file size and per device storage cap?
 - Should expiry be changeable after a file is added?
 
+- Go mDNS library: which one (for example grandcat/zeroconf or hashicorp/mdns), and how to get it into the project. The cloud workspace blocks the Go module proxy, so it has to be fetched on a machine with access.
+- Privacy of announcements: the device id in the TXT record is stable. Rotating beacons (a value derived from the id and the time, which paired devices can recognise) would stop outsiders on the Wi-Fi from tracking a device, at the cost of complexity.
+
 ## Risks
 
 - iOS app can only transfer while open, so the sending device must be on when pulling.
 - Android vendors may kill background services, so sync can stop unless battery optimisation is turned off.
 - Four platforms is a lot for one maintainer. Order of work reduces this: core, Windows, Android, then iOS and Mac.
-- Local network permission on iOS and mDNS quirks on some routers (client isolation).
+- Local network permission on iOS and mDNS quirks on some routers (client isolation). Manual address hints are the fallback.
+- iOS cannot do raw multicast without an Apple entitlement, so discovery there depends on system Bonjour and the user granting Local Network access.
 
 ## Changelog
 
 - 2026-10-05: Project created. README, tracking and design doc added.
+- 2026-10-05: Discovery logic done (core/discovery, 31 tests, 81 across core, 21 deliberately broken versions all caught). Announcement format, Finder with paired-only tracking, expiry, hints and events. The real mDNS backend is not written yet.
 - 2026-10-05: Pairing done (core/pairing, 31 tests, 50 across core, security checks verified by breaking each one on purpose). CLI gained `invite`, `join`, `peers`, `unpair`.
 - 2026-10-05: M1 started. Added core/identity (keypair, device id, key storage, pinned TLS config) with 15 tests, plus `ephdrop id` command.

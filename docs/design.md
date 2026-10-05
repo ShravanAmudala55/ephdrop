@@ -30,15 +30,37 @@ Each device generates an ed25519 keypair on first run. The public key hash is th
 
 ## Discovery
 
-Devices advertise `_ephdrop._tcp` over mDNS (Bonjour on Apple platforms) with:
+Implemented in `core/discovery`, in two layers.
 
-- device id (short)
-- port
-- protocol version
+**Announcement format** (the same on every platform). Devices publish a DNS-SD service of type `_ephdrop._tcp` in the `local.` domain:
 
-Only the id and port are public. Nothing about files is advertised.
+- instance name: `ephdrop-` plus the first 12 characters of the device id
+- port: the port the device listens on
+- TXT record: `v=1` (protocol version) and `id=<device id>`
 
-Known issue: some routers isolate Wi-Fi clients and block mDNS. A manual "add by IP" option is a fallback.
+The device's own addresses come from the mDNS layer's normal A and AAAA records. Announcements that are malformed, from a newer protocol version, or that carry no local address are dropped. Only private, link-local and loopback addresses are accepted, so a hostile device cannot make us connect (and show our certificate) to an address on the internet.
+
+**Finder**. Keeps the set of paired devices that are visible now, with their addresses:
+
+- Only paired ids are tracked, and our own id is ignored, so strangers' announcements use no memory.
+- A device that goes quiet is dropped after 2 minutes (the usual mDNS record lifetime). A goodbye removes it at once.
+- Changes are delivered as `Appeared`, `Updated` and `Disappeared` events. A slow subscriber never blocks the Finder and can resync with `Peers()`.
+- `Hint(id, addrs)` lets the user type an address by hand for networks where announcements do not get through (routers with client isolation, VPNs). Hints never expire. After pairing, the joiner can hint the inviter's invite addresses.
+- When a device is unpaired it disappears from the Finder immediately, and `Forget` clears what is stored.
+
+**Backends** do the actual sending and receiving. The core has a `Backend` interface (`Advertise`, `Browse`), and native code can skip it and call `Finder.Seen` and `Finder.Gone` directly.
+
+| Platform | Backend |
+|----------|---------|
+| Windows, Mac | Go mDNS library (planned) |
+| Android | Android NSD, or the Go library with a multicast lock held (to decide) |
+| iOS | System Bonjour (`NWBrowser`, `NetService`), reporting into `Finder.Seen` |
+
+Why iOS cannot use a Go mDNS library: on iOS, sending or receiving raw multicast needs the `com.apple.developer.networking.multicast` entitlement, which Apple grants on request and which SideStore builds do not have. Bonjour through the system APIs does not need it. It does need the user's Local Network permission, `NSLocalNetworkUsageDescription` and `_ephdrop._tcp` listed under `NSBonjourServices` in Info.plist. Opening a connection to a local address also needs that permission, and if the app is in the background while the permission is still undecided, iOS denies the operation without asking. This fits the plan to treat iOS as a foreground client.
+
+**Announcements are not authenticated.** Anyone on the network can claim any id. That is safe because discovery only says where to try. The connection is pinned to the paired device's key, so a device that lies about its id fails the TLS handshake.
+
+**Known trade-off:** the id in the TXT record is stable, so someone on the same Wi-Fi can tell that a device with that id is present. Rotating beacons would hide this at the cost of complexity. See the open questions in TRACKING.md.
 
 ## Pairing
 

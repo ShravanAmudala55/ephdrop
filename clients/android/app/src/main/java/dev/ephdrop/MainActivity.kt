@@ -81,7 +81,7 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
-        web.addJavascriptInterface(Bridge(), "ephdropAndroid")
+        web.addJavascriptInterface(Bridge(), "ephdropPhone")
 
         ContextCompat.registerReceiver(
             this, closed, IntentFilter(EphdropService.ACTION_CLOSED), ContextCompat.RECEIVER_NOT_EXPORTED,

@@ -52,12 +52,13 @@ Phase: M2 built, needs a trial on a real Windows and Mac desktop. Core (identity
 - [ ] Pair with Windows by QR code
 
 ### M4: iOS client
-- [ ] Discovery through system Bonjour (`NWBrowser` and `NetService`) feeding `Finder.Seen`. Add `_ephdrop._tcp` to NSBonjourServices and write NSLocalNetworkUsageDescription
-- [ ] SwiftUI app using the core
-- [ ] Foreground only: connect on open, show list, tap to pull
+- [x] Discovery through system Bonjour (`NWBrowser` and `NetService`) feeding `Finder.Seen`, with NSBonjourServices and NSLocalNetworkUsageDescription (written, untested)
+- [x] SwiftUI app using the core (clients/ios, written without being able to compile it)
+- [ ] Build it: run build-lib.sh, xcodegen, open in Xcode, fix what it complains about
+- [x] Foreground only: starts on open and stops in the background (written, untested)
 - [ ] Share extension to drop files in
-- [ ] Unsigned .ipa build for SideStore
-- [ ] Scan the QR code to pair (camera) and show our own invite
+- [x] Unsigned .ipa build script for SideStore (build-ipa.sh, untested)
+- [x] Scan the QR code to pair (camera) and show our own invite (written, untested)
 - [ ] Local network permission flow tested
 
 ### M5: Mac client
@@ -131,3 +132,5 @@ Phase: M2 built, needs a trial on a real Windows and Mac desktop. Core (identity
 - 2026-10-05: Added 'Open at login' (right-click the tray icon; off by default; starts hidden in the tray). Works on Mac and Windows only, and the setting itself is not testable on the Linux test machine, so it needs a try on a real computer.
 - 2026-10-05: Started M3. Added core/mobile, the one small Go interface both phone apps will use (start, stop, page address, discovery reports from the system, no direct interface listing). Added a way for the app to give its own addresses for invites, because Go on Android can be blocked from listing interfaces. Plan: the Android app is a thin Kotlin shell (foreground service, web view of the existing window, file picker, share sheet, QR scanner) so the window you already tried is reused. Cannot build an .apk on the test machine (no route to the Android SDK).
 - 2026-10-05: Wrote the Android app (clients/android) and the build script. Android Studio, SDK, NDK and Go are installed on his Mac. The Kotlin cannot be compiled on the test machine, so it is untested; the Go side it uses (core/mobile) is tested and compiles for Android arm64. The window page gained a Scan QR button and a save-to-Downloads hook that only appear inside the Android app.
+- 2026-10-05: Linux: the desktop app now handles Linux trays (menu instead of clicks, panel placed in a corner), has Open at login through an autostart file, and builds an AppImage and a .deb. Built both here; the packaged app starts its bundled program and stops it on quit. Not tried on a real Linux desktop.
+- 2026-10-05: iOS: wrote the SwiftUI app (clients/ios) and build scripts: web view of the same window, Bonjour discovery feeding the Go program, camera QR scan, Open in ephdrop, saved files in the Files app, runs only while open. Needs XcodeGen. Could not compile Swift on the test machine, so it is untested. The window page now calls the phone helper window.ephdropPhone on both phone apps.

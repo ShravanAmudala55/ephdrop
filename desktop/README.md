@@ -40,3 +40,21 @@ This builds an installer for the computer you run it on (a .dmg on a Mac, an ins
 ## Status
 
 Tested: window, pairing, sharing, saving, preparing files for dragging, closing to the tray, quitting, on Linux with a virtual screen. Not yet tested on a real Windows or Mac desktop: the drop itself, the tray icon, and packaging.
+
+## Linux
+
+Build the installable files on a Linux computer:
+
+```
+cd desktop
+npm install
+npm run dist:linux
+```
+
+This makes `dist/ephdrop-0.1.0.AppImage` (runs anywhere, no install: `chmod +x` it and open it) and a `.deb` for Debian, Ubuntu and Mint. To run from the code instead, use `npm start`.
+
+Notes for Linux:
+
+- Most Linux desktops only show a menu from the tray icon, not clicks. Right-click or click the icon and choose "Recent files" for the small panel, or "Open ephdrop" for the window. GNOME needs the AppIndicator extension for any tray icon to appear.
+- "Open at login" in the tray menu writes `~/.config/autostart/ephdrop.desktop`.
+- Dragging files out of the window works on X11 and most Wayland sessions. If a desktop does not accept the drop, use Save instead.

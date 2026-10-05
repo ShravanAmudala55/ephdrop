@@ -4,8 +4,8 @@
 // Without it this page still works in a browser, just without dragging files
 // out and without picking files by path.
 const shell = window.ephdropShell || null;
-// The Android app adds window.ephdropAndroid (see clients/android).
-const phone = window.ephdropAndroid || null;
+// The phone apps add window.ephdropPhone (see clients/android and clients/ios).
+const phone = window.ephdropPhone || null;
 
 const $ = (id) => document.getElementById(id);
 let state = { self: {}, peers: [], items: [], invite: null };

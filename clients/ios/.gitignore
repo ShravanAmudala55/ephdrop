@@ -1,0 +1,6 @@
+Mobile.xcframework/
+ephdrop.xcodeproj/
+build/
+xcuserdata/
+*.xcworkspace/
+.DS_Store

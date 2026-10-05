@@ -107,7 +107,8 @@ function createWindow() {
     },
   });
   win.removeMenu();
-  win.once("ready-to-show", () => win.show());
+  const atLogin = app.getLoginItemSettings().wasOpenedAtLogin || process.argv.includes("--hidden");
+  win.once("ready-to-show", () => { if (!atLogin) win.show(); });
   win.loadURL(daemonInfo.url);
 
   // The window only ever shows our own page.
@@ -174,13 +175,21 @@ function createTray() {
   if (process.platform === "darwin") img.setTemplateImage(true);
   tray = new Tray(img);
   tray.setToolTip("ephdrop");
-  const menu = Menu.buildFromTemplate([
-    { label: "Open ephdrop", click: showWindow },
-    { type: "separator" },
-    { label: "Quit", click: () => app.quit() },
-  ]);
   tray.on("click", togglePanel);
-  tray.on("right-click", () => tray.popUpContextMenu(menu));
+  tray.on("right-click", () => {
+    // built each time so the checkbox shows the system's current setting
+    const canLogin = process.platform === "darwin" || process.platform === "win32";
+    tray.popUpContextMenu(Menu.buildFromTemplate([
+      { label: "Open ephdrop", click: showWindow },
+      ...(canLogin ? [{
+        label: "Open at login", type: "checkbox",
+        checked: app.getLoginItemSettings().openAtLogin,
+        click: (item) => app.setLoginItemSettings({ openAtLogin: item.checked, openAsHidden: true }),
+      }] : []),
+      { type: "separator" },
+      { label: "Quit", click: () => app.quit() },
+    ]));
+  });
   createPanel();
 }
 

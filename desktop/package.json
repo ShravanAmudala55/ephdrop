@@ -10,7 +10,8 @@
     "daemon": "node scripts/build-daemon.js",
     "start": "npm run daemon && electron .",
     "test": "npm run daemon && EPHDROPD=$PWD/bin/ephdropd xvfb-run -a node test/smoke.js",
-    "dist": "npm run daemon && electron-builder"
+    "dist": "npm run daemon && electron-builder",
+    "dist:linux": "npm run daemon && electron-builder --linux"
   },
   "devDependencies": {
     "electron": "^41.0.0",
@@ -46,10 +47,20 @@
     },
     "linux": {
       "target": [
-        "AppImage"
+        "AppImage",
+        "deb"
       ],
       "icon": "assets/icon.png",
-      "category": "Utility"
-    }
-  }
+      "category": "Utility",
+      "synopsis": "Share files between your devices",
+      "maintainer": "ephdrop <shravan.amudala55@gmail.com>",
+      "executableName": "ephdrop"
+    },
+    "publish": null
+  },
+  "author": {
+    "name": "ephdrop",
+    "email": "shravan.amudala55@gmail.com"
+  },
+  "homepage": "https://github.com/ShravanAmudala55/ephdrop"
 }

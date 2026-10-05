@@ -1,0 +1,54 @@
+name: ephdrop
+options:
+  bundleIdPrefix: dev.ephdrop
+  deploymentTarget:
+    iOS: "16.0"
+settings:
+  base:
+    SWIFT_VERSION: "5.9"
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+targets:
+  ephdrop:
+    type: application
+    platform: iOS
+    sources:
+      - Sources
+    dependencies:
+      # built from core/mobile by build-lib.sh
+      - framework: Mobile.xcframework
+        embed: true
+    info:
+      path: Sources/Info.plist
+      properties:
+        CFBundleDisplayName: ephdrop
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        UISupportedInterfaceOrientations~ipad:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationPortraitUpsideDown
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        NSLocalNetworkUsageDescription: ephdrop finds your other devices on your Wi-Fi so you can share files with them.
+        NSBonjourServices:
+          - _ephdrop._tcp
+        NSCameraUsageDescription: ephdrop uses the camera to scan the pairing code shown on your other device.
+        NSAppTransportSecurity:
+          NSAllowsLocalNetworking: true
+        UIFileSharingEnabled: true
+        LSSupportsOpeningDocumentsInPlace: true
+        CFBundleDocumentTypes:
+          - CFBundleTypeName: Any file
+            LSHandlerRank: Alternate
+            LSItemContentTypes:
+              - public.data
+              - public.content
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: dev.ephdrop.app
+        TARGETED_DEVICE_FAMILY: "1,2"
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        GENERATE_INFOPLIST_FILE: NO

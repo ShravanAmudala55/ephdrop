@@ -14,6 +14,7 @@ let daemon = null;
 let daemonInfo = null; // {url, port, id}
 let origin = null;
 let win = null;
+nativeTheme.themeSource = "light"; // always the white design, whatever the system theme
 let tray = null;
 let panel = null;
 let panelHiddenAt = 0;
@@ -96,7 +97,7 @@ function createWindow() {
     title: "ephdrop",
     icon: path.join(__dirname, "assets", "icon.png"),
     show: false,
-    backgroundColor: nativeTheme.shouldUseDarkColors ? "#0b2a4a" : "#ffffff",
+    backgroundColor: "#ffffff",
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
       contextIsolation: true,
@@ -133,7 +134,7 @@ function createPanel() {
     width: 340, height: 430, show: false, frame: false, resizable: false,
     movable: false, minimizable: false, maximizable: false, fullscreenable: false,
     skipTaskbar: true, alwaysOnTop: true,
-    backgroundColor: nativeTheme.shouldUseDarkColors ? "#0b2a4a" : "#ffffff",
+    backgroundColor: "#ffffff",
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
       contextIsolation: true, sandbox: true, nodeIntegration: false, spellcheck: false,

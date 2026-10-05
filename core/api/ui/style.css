@@ -29,33 +29,33 @@
   --c2: #7a3fd1;
   --c3: #c2255c;
   --c4: #3a7d0a;
-  color-scheme: light dark;
+  color-scheme: light;
 }
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg: #0b2a4a;
-    --side: #0a2542;
-    --ink: #d6e7ff;
-    --mute: #86a9d4;
-    --line: #2b5688;
-    --acc: #ffd23f;
-    --acc-ink: #0b2a4a;
-    --field: #0d3158;
-    --btn: #0d3158;
-    --sel: #12406f;
-    --hover: #0f3760;
-    --track: #1d4a7a;
-    --danger: #ff7d65;
-    --grid: rgba(95, 150, 210, 0.12);
-    --lift: rgba(0, 0, 0, 0.35);
-    --scrim: rgba(3, 14, 28, 0.6);
-    --c-self: #ffd23f;
-    --c0: #5ee1ff;
-    --c1: #ff9f7a;
-    --c2: #b9a4ff;
-    --c3: #ff8fb1;
-    --c4: #9be564;
-  }
+/* Dark (the navy sheet) is opt-in: the page is white unless data-theme="dark" is set. */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0b2a4a;
+  --side: #0a2542;
+  --ink: #d6e7ff;
+  --mute: #86a9d4;
+  --line: #2b5688;
+  --acc: #ffd23f;
+  --acc-ink: #0b2a4a;
+  --field: #0d3158;
+  --btn: #0d3158;
+  --sel: #12406f;
+  --hover: #0f3760;
+  --track: #1d4a7a;
+  --danger: #ff7d65;
+  --grid: rgba(95, 150, 210, 0.12);
+  --lift: rgba(0, 0, 0, 0.35);
+  --scrim: rgba(3, 14, 28, 0.6);
+  --c-self: #ffd23f;
+  --c0: #5ee1ff;
+  --c1: #ff9f7a;
+  --c2: #b9a4ff;
+  --c3: #ff8fb1;
+  --c4: #9be564;
 }
 
 * { box-sizing: border-box; }

@@ -9,6 +9,7 @@ Go library shared by all clients: identity, discovery, pairing, file list, trans
 | `identity` | done | ed25519 device key, device id, key storage, pinned TLS config |
 | `pairing` | done | one time invites, paired device list, pairing handshake |
 | `discovery` | logic done, mDNS backend in `discovery/mdns` | announcement format, Finder for visible paired devices, address hints |
+| `shelf` | done | this device's shared files: copy in, hash, list, open, remove, expiry and sweep |
 | `internal/atomicfile` | done | crash safe file writes |
 | `cmd/ephdrop` | in progress | development command line driver |
 

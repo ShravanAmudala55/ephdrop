@@ -35,6 +35,8 @@
     ],
     "mac": {
       "category": "public.app-category.utilities",
+      "hardenedRuntime": true,
+      "notarize": true,
       "target": [
         "dmg"
       ],

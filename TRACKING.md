@@ -1,10 +1,10 @@
 # ephdrop tracking
 
-Last updated: 2026-10-05
+Last updated: 2026-10-07
 
 ## Status
 
-Phase: M2 built, needs a trial on a real Windows and Mac desktop. Core (identity, pairing, discovery, shelf, transfer, file list, change pokes), local API, window UI and Electron tray app work and pass tests. Left in M1: resume of interrupted downloads, trying it on two real machines. Left in M2: run at login, scan a QR code on desktop, installer packaging check. Started M3 (Android): the Go side for phones is done and tested; the Kotlin app is not written yet.
+Phase: M2 built and v0.1.0 released (installers for Mac, Windows and Linux built by GitHub Actions). Signing the Mac build is in progress (pull request 5). Needs a trial on a real Windows and Mac desktop. Core (identity, pairing, discovery, shelf, transfer, file list, change pokes), local API, window UI and Electron tray app work and pass tests. Left in M1: resume of interrupted downloads, trying it on two real machines. Left in M2: run at login, scan a QR code on desktop, installer packaging check. Started M3 (Android): the Go side for phones is done and tested; the Kotlin app is not written yet.
 
 ## Milestones
 
@@ -37,6 +37,9 @@ Phase: M2 built, needs a trial on a real Windows and Mac desktop. Core (identity
 - [x] Tray app with file list (window hides to the tray on close)
 - [x] Drag and drop to add a file with expiry choice
 - [x] Download on click, and drag a file out of the window to any folder or app
+- [x] Installers built automatically by GitHub Actions on a `v*` tag (v0.1.0: Mac arm64 and x64 dmg, Windows exe, Linux AppImage and deb). Built but not yet installed and run from the release
+- [ ] Mac app signed and notarized with the Developer ID certificate (pull request 5, not merged or tested)
+- [ ] Windows code signing (costs money; SmartScreen warning stays until then)
 - [ ] Runs at login in the background
 - [ ] Try on a real Windows and Mac desktop (tray icon, drag out, `npm run dist` installers)
 
@@ -69,8 +72,8 @@ Phase: M2 built, needs a trial on a real Windows and Mac desktop. Core (identity
 - [x] Choose licence and add LICENSE file (MIT)
 - [ ] Security review of pairing and transport
 - [ ] Make the repo public
-- [ ] Publish releases (Windows, Mac, Android apk, iOS ipa)
-- [ ] README with install steps per platform
+- [ ] Publish releases (Windows, Mac, Android apk, iOS ipa). Done: desktop v0.1.0. Left: Android apk, iOS ipa
+- [ ] README with install steps per platform. Done: Download section for desktop with first-run warnings
 
 ## Decisions
 
@@ -94,6 +97,12 @@ Phase: M2 built, needs a trial on a real Windows and Mac desktop. Core (identity
 | 2026-10-05 | Devices tell paired peers when their list changes (`poke`) | New files appear on other devices at once instead of at the next 30s refresh |
 | 2026-10-05 | Window design: white blueprint sheet (navy in dark mode), JetBrains Mono, sidebar of devices plus file table, a ring timer per file | Chosen by the maintainer from mockups. Rings show how much of a file's life is left; the last hour turns red |
 | 2026-10-05 | Logo: lowercase e and capital D with a curved ribbon (behind the e, over the D) on a dusk tile; hand-drawn wordmark | Chosen by the maintainer. Files in design/logo |
+| 2026-10-05 | Releases are built by GitHub Actions when a `v*` tag is pushed | Installers for all three desktop systems come from one place and attach to the Releases page |
+| 2026-10-05 | `main` is protected; changes go through branches and pull requests | Avoids accidental pushes to the main branch |
+| 2026-10-05 | Skip the mDNS integration test on hosted macOS CI runners | It fails there every time (multicast between local sockets does not work on the VM) and passes on a real Mac and on Linux CI |
+| 2026-10-07 | Sign and notarize the Mac build with a Developer ID certificate kept in GitHub secrets | Unsigned apps show "damaged" or "unidentified developer" on Macs, which ordinary users cannot get past. Secrets are only given to the Mac build step |
+| 2026-10-07 | Stay on Electron for now (installers are about 100 MB) | Most of the size is Chromium. Wails (Go plus system web view, about 10 MB) is the option if size matters later |
+| 2026-10-07 | No blue-green deployment | There is no server; a release is files on GitHub, and older releases stay available |
 
 ## Open questions
 
@@ -110,6 +119,9 @@ Phase: M2 built, needs a trial on a real Windows and Mac desktop. Core (identity
 
 - iOS app can only transfer while open, so the sending device must be on when pulling.
 - Android vendors may kill background services, so sync can stop unless battery optimisation is turned off.
+- Windows build is unsigned, so SmartScreen warns on first run. A Windows code-signing certificate costs about 100 to 300 a year.
+- The Mac Developer ID certificate expires on 2027-02-01. Make a new one and replace the CSC_LINK and CSC_KEY_PASSWORD secrets before then.
+- Hosted macOS CI runners cannot test multicast, so mDNS discovery is only tested on Linux CI and on real Macs.
 - Four platforms is a lot for one maintainer. Order of work reduces this: core, Windows, Android, then iOS and Mac.
 - Local network permission on iOS and mDNS quirks on some routers (client isolation). Manual address hints are the fallback.
 - iOS cannot do raw multicast without an Apple entitlement, so discovery there depends on system Bonjour and the user granting Local Network access.
@@ -135,3 +147,6 @@ Phase: M2 built, needs a trial on a real Windows and Mac desktop. Core (identity
 - 2026-10-05: Linux: the desktop app now handles Linux trays (menu instead of clicks, panel placed in a corner), has Open at login through an autostart file, and builds an AppImage and a .deb. Built both here; the packaged app starts its bundled program and stops it on quit. Not tried on a real Linux desktop.
 - 2026-10-05: iOS: wrote the SwiftUI app (clients/ios) and build scripts: web view of the same window, Bonjour discovery feeding the Go program, camera QR scan, Open in ephdrop, saved files in the Files app, runs only while open. Needs XcodeGen. Could not compile Swift on the test machine, so it is untested. The window page now calls the phone helper window.ephdropPhone on both phone apps.
 - 2026-10-05: Chose the MIT licence and added the LICENSE file. Rewrote the README with the logo and screenshots.
+- 2026-10-05: Added CI (Go tests on Linux and macOS, desktop smoke test) and a release workflow, with issue and pull request templates. Moved the config into `.github` and merged it by pull request because `main` is protected. Tagged v0.1.0; after a re-run (the first attempt never got a runner) the Release run built all five installers. Added a Download section to the README with the first-run warnings, and updated the installer status line.
+- 2026-10-05: Mac CI job failed on `TestIntegrationDevicesFindEachOther`. The test passes on a real Mac (found the device in 2.4 s), so it is now skipped on macOS when `CI` is set (pull request 4).
+- 2026-10-07: Opening the unsigned Mac build showed "ephdrop is damaged and can't be opened". Cause: no Apple signing. Created a Developer ID Application certificate, added the five signing secrets to GitHub, and opened pull request 5 to sign and notarize the Mac build. Not merged or tested yet. Next: merge, tag v0.1.1, download the new dmg and check it opens with no warning.

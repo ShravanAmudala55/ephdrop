@@ -54,7 +54,10 @@ jobs:
           security list-keychains -d user -s "$KEYCHAIN" $(security list-keychains -d user | tr -d '"')
           rm -f "$RUNNER_TEMP/cert.p12"
           echo "CSC_KEYCHAIN=$KEYCHAIN" >> "$GITHUB_ENV"
-          security find-identity -v -p codesigning "$KEYCHAIN"
+          # Print only a count, so the certificate holder's name stays out of public logs.
+          COUNT="$(security find-identity -v -p codesigning "$KEYCHAIN" | grep -c 'Developer ID Application' || true)"
+          echo "Developer ID certificates found: $COUNT"
+          [ "$COUNT" -ge 1 ]
 
       - name: Build for Mac (Apple Silicon and Intel)
         if: runner.os == 'macOS'

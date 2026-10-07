@@ -133,6 +133,22 @@ ephdrop is young, and there is real work for people who want to help. You can:
 
 You do not have to write code. If ephdrop sounds useful, a star on GitHub helps other people find it.
 
+## Similar projects
+
+[LocalSend](https://github.com/localsend/localsend) is a well made open source app that shares files between nearby devices over Wi-Fi with no cloud and no account. If you only need to send a file to a device near you, it is a good choice. ephdrop covers a slightly different case: a small shelf shared between *your own* devices, where files do not pile up.
+
+<p align="center">
+  <img src="docs/diagrams/how-it-differs.svg" alt="LocalSend pushes a file to any nearby device and the receiver accepts it. ephdrop devices are paired once, share a list of files, and a file is pulled on request and deletes itself after a day." width="820">
+</p>
+
+| | LocalSend | ephdrop |
+|---|---|---|
+| Who can send to you | Any device on the network, after you accept | Only devices you paired |
+| Direction | The sender pushes | Devices share a list and you pull a file when you want it |
+| Files | Stay until you delete them | Expire by themselves, after a day by default |
+
+This comparison comes from reading LocalSend's documentation and core code. If something here is out of date or wrong, please open an issue.
+
 ## Not for
 
 - Backup or long term sync. Use Syncthing or similar.

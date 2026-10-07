@@ -37,6 +37,12 @@
       "category": "public.app-category.utilities",
       "hardenedRuntime": true,
       "notarize": true,
+      "extendInfo": {
+        "NSLocalNetworkUsageDescription": "ephdrop finds your other devices on your Wi-Fi so you can share files with them.",
+        "NSBonjourServices": [
+          "_ephdrop._tcp"
+        ]
+      },
       "target": [
         "dmg"
       ],

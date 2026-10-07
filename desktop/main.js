@@ -4,6 +4,7 @@
 
 const { app, BrowserWindow, Tray, Menu, nativeImage, nativeTheme, screen, ipcMain, dialog, shell } = require("electron");
 const { spawn } = require("child_process");
+const dgram = require("dgram");
 const fs = require("fs");
 const os = require("os");
 const path = require("path");
@@ -21,6 +22,37 @@ let panelHiddenAt = 0;
 let quitting = false;
 
 const cacheDir = () => path.join(app.getPath("temp"), "ephdrop-drag");
+
+// ------------------------------------------- local network permission (macOS)
+
+// Recent macOS versions block an app from talking to the local network until
+// the user allows it, and the prompt only appears for the app's own process,
+// not for the Go program it starts. Without it, ephdrop only announces itself
+// on this computer and other devices cannot find it. Sending one standard
+// mDNS question from here makes macOS ask once: "ephdrop would like to find
+// and connect to devices on your local network".
+function askForLocalNetworkAccess() {
+  if (process.platform !== "darwin") return;
+  try {
+    const labels = ["_ephdrop", "_tcp", "local"];
+    const name = Buffer.concat([
+      ...labels.map((l) => Buffer.concat([Buffer.from([l.length]), Buffer.from(l, "ascii")])),
+      Buffer.from([0]),
+    ]);
+    const header = Buffer.alloc(12);
+    header.writeUInt16BE(1, 4); // one question
+    const tail = Buffer.alloc(4);
+    tail.writeUInt16BE(12, 0); // type PTR
+    tail.writeUInt16BE(1, 2); // class IN
+    const query = Buffer.concat([header, name, tail]);
+
+    const sock = dgram.createSocket("udp4");
+    sock.on("error", () => sock.close());
+    sock.send(query, 5353, "224.0.0.251", () => setTimeout(() => { try { sock.close(); } catch (_) {} }, 1000));
+  } catch (_) {
+    // Only used to make macOS show its prompt. The app works without it.
+  }
+}
 
 // ------------------------------------------------------------ the Go program
 
@@ -285,6 +317,7 @@ if (!app.requestSingleInstanceLock()) {
 
   app.whenReady().then(async () => {
     fs.rmSync(cacheDir(), { recursive: true, force: true });
+    askForLocalNetworkAccess();
     try {
       daemonInfo = await startDaemon();
     } catch (e) {

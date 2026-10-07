@@ -35,14 +35,33 @@ jobs:
         working-directory: desktop
         run: npm ci
 
-      - name: Build for Mac (Apple Silicon and Intel)
+      # electron-builder 26 makes its own keychain and then unlocks it with the
+      # certificate password, which fails. So the keychain is made here instead.
+      - name: Import the Mac signing certificate
         if: runner.os == 'macOS'
-        working-directory: desktop
-        # Signs with the Developer ID certificate and sends the app to Apple
-        # for notarization, so it opens without a warning on a Mac.
         env:
           CSC_LINK: ${{ secrets.CSC_LINK }}
           CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+        run: |
+          KEYCHAIN="$RUNNER_TEMP/signing.keychain-db"
+          KEYCHAIN_PASSWORD="$(uuidgen)"
+          echo "$CSC_LINK" | base64 --decode > "$RUNNER_TEMP/cert.p12"
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          security import "$RUNNER_TEMP/cert.p12" -k "$KEYCHAIN" -P "$CSC_KEY_PASSWORD" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          security list-keychains -d user -s "$KEYCHAIN" $(security list-keychains -d user | tr -d '"')
+          rm -f "$RUNNER_TEMP/cert.p12"
+          echo "CSC_KEYCHAIN=$KEYCHAIN" >> "$GITHUB_ENV"
+          security find-identity -v -p codesigning "$KEYCHAIN"
+
+      - name: Build for Mac (Apple Silicon and Intel)
+        if: runner.os == 'macOS'
+        working-directory: desktop
+        # Signs with the Developer ID certificate in the keychain made above and
+        # sends the app to Apple for notarization, so it opens without a warning.
+        env:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
